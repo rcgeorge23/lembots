@@ -680,20 +680,22 @@ const App = () => {
           </div>
           <div className="controls__trace">
             <h3>Trace</h3>
-            {actionTrace.length === 0 ? (
-              <p>Build a program and step/run to see actions here.</p>
-            ) : (
-              <ol>
-                {actionTrace.map((action, index) => (
-                  <li
-                    key={`${action}-${index}`}
-                    className={index === actionTrace.length - 1 ? 'is-current' : undefined}
-                  >
-                    {actionLabels[action]}
-                  </li>
-                ))}
-              </ol>
-            )}
+            <div className="controls__trace-log" aria-live="polite">
+              {actionTrace.length === 0 ? (
+                <p>Build a program and step/run to see actions here.</p>
+              ) : (
+                <ol>
+                  {actionTrace.map((action, index) => (
+                    <li
+                      key={`${action}-${index}`}
+                      className={index === actionTrace.length - 1 ? 'is-current' : undefined}
+                    >
+                      {actionLabels[action]}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
         </section>
       </main>
