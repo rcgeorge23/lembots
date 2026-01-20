@@ -435,15 +435,34 @@ const App = () => {
 
     registerBlocks();
 
+    const blocklyTheme = Blockly.Theme.defineTheme('lembots-dark', {
+      base: Blockly.Themes.Classic,
+      componentStyles: {
+        workspaceBackgroundColour: '#0f172a',
+        toolboxBackgroundColour: '#111827',
+        toolboxForegroundColour: '#e2e8f0',
+        flyoutBackgroundColour: '#111827',
+        flyoutForegroundColour: '#e2e8f0',
+        flyoutOpacity: 0.95,
+        scrollbarColour: '#334155',
+        scrollbarOpacity: 0.9,
+        insertionMarkerColour: '#6366f1',
+        insertionMarkerOpacity: 0.6,
+        cursorColour: '#818cf8',
+        selectedGlowColour: '#6366f1',
+      },
+    });
+
     const workspace = Blockly.inject(blocklyDiv, {
       toolbox: toolboxDefinition,
       grid: {
         spacing: 20,
         length: 3,
-        colour: '#e2e8f0',
+        colour: '#334155',
         snap: true,
       },
       renderer: 'thrasos',
+      theme: blocklyTheme,
     });
     workspaceRef.current = workspace;
 
