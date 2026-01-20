@@ -1,7 +1,7 @@
 import type { Direction, RobotAction, RobotState } from './robot';
 import type { World } from './world';
 import { applyAction, getForwardPosition } from './rules';
-import { isGoal } from './world';
+import { isDoor, isGoal, isPressurePlate, isWall } from './world';
 
 export type SimulationStatus = 'running' | 'won' | 'lost';
 
@@ -29,6 +29,7 @@ export interface SimulationState {
   requiredSaved: number;
   spawnedCount: number;
   nextSpawnTick: number | null;
+  doorUnlocked: boolean;
 }
 
 export interface SimulationConfig {
@@ -95,6 +96,7 @@ export const createSimulation = ({
 }: SimulationConfig): SimulationState => {
   const { robots, spawnedCount, nextSpawnTick } = initializeRobots(spawner, world, exits);
   const savedCount = robots.filter((robot) => robot.reachedGoal).length;
+  const doorUnlocked = isPressurePlatePressed(world, robots);
   return {
     world,
     robots,
@@ -106,11 +108,21 @@ export const createSimulation = ({
     requiredSaved,
     spawnedCount,
     nextSpawnTick,
+    doorUnlocked,
   };
 };
 
 const isBlockingRobot = (robot: RobotState): boolean =>
   robot.alive && !robot.reachedGoal;
+
+export const isPressurePlatePressed = (world: World, robots: RobotState[]): boolean =>
+  robots.some((robot) => isBlockingRobot(robot) && isPressurePlate(world, robot.x, robot.y));
+
+export const isDoorOpen = (
+  world: World,
+  robots: RobotState[],
+  doorUnlocked = false,
+): boolean => doorUnlocked || isPressurePlatePressed(world, robots);
 
 const positionKey = (x: number, y: number): string => `${x},${y}`;
 
@@ -161,6 +173,10 @@ export const stepSimulation = (
   const occupied = buildOccupiedPositions(state.robots);
   const spawned = spawnNextRobot(state, occupied);
   const nextOccupied = buildOccupiedPositions(spawned.robots);
+  const platePressed = isPressurePlatePressed(state.world, spawned.robots);
+  const doorOpen = isDoorOpen(state.world, spawned.robots, state.doorUnlocked);
+  const isBlocked = (x: number, y: number) =>
+    isWall(state.world, x, y) || (isDoor(state.world, x, y) && !doorOpen);
   const nextRobots = spawned.robots.map((robot, index) => {
     const action = actions[index];
     if (!action) {
@@ -175,11 +191,11 @@ export const stepSimulation = (
 
     if (action === 'MOVE_FORWARD' && robot.alive && !robot.reachedGoal) {
       const forward = getForwardPosition(robot, robot.direction);
-      if (!nextOccupied.has(positionKey(forward.x, forward.y))) {
-        nextRobot = applyAction(state.world, robot, action);
+      if (!nextOccupied.has(positionKey(forward.x, forward.y)) && !isBlocked(forward.x, forward.y)) {
+        nextRobot = applyAction(state.world, robot, action, { isBlocked });
       }
     } else {
-      nextRobot = applyAction(state.world, robot, action);
+      nextRobot = applyAction(state.world, robot, action, { isBlocked });
     }
 
     nextRobot = applyExitStatus(state.world, state.exits, nextRobot);
@@ -190,6 +206,10 @@ export const stepSimulation = (
 
     return nextRobot;
   });
+  const doorUnlocked =
+    state.doorUnlocked ||
+    platePressed ||
+    isPressurePlatePressed(state.world, nextRobots);
   const stepCount = state.stepCount + 1;
   const savedCount = nextRobots.filter((robot) => robot.reachedGoal).length;
   const hasActiveRobot = nextRobots.some((robot) => robot.alive && !robot.reachedGoal);
@@ -203,6 +223,7 @@ export const stepSimulation = (
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'won',
       stepCount,
+      doorUnlocked,
     };
   }
 
@@ -214,6 +235,7 @@ export const stepSimulation = (
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'lost',
       stepCount,
+      doorUnlocked,
     };
   }
 
@@ -225,6 +247,7 @@ export const stepSimulation = (
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'lost',
       stepCount,
+      doorUnlocked,
     };
   }
 
@@ -234,5 +257,6 @@ export const stepSimulation = (
     spawnedCount: spawned.spawnedCount,
     nextSpawnTick: spawned.nextSpawnTick,
     stepCount,
+    doorUnlocked,
   };
 };
