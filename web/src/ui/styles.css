@@ -397,6 +397,22 @@ body {
   color: var(--panel-highlight);
 }
 
+.levels-strip__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--panel-highlight);
+  background: rgba(15, 23, 42, 0.35);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.levels-strip__toggle input {
+  accent-color: #38bdf8;
+}
+
 .console {
   display: flex;
   flex-direction: column;
