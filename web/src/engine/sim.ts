@@ -1,6 +1,6 @@
 import type { Direction, RobotAction, RobotState } from './robot';
 import type { World } from './world';
-import { applyAction } from './rules';
+import { applyAction, getForwardPosition } from './rules';
 import { isGoal } from './world';
 
 export type SimulationStatus = 'running' | 'won' | 'lost';
@@ -109,8 +109,17 @@ export const createSimulation = ({
   };
 };
 
+const isBlockingRobot = (robot: RobotState): boolean =>
+  robot.alive && !robot.reachedGoal;
+
+const positionKey = (x: number, y: number): string => `${x},${y}`;
+
+const buildOccupiedPositions = (robots: RobotState[]): Set<string> =>
+  new Set(robots.filter(isBlockingRobot).map((robot) => positionKey(robot.x, robot.y)));
+
 const spawnNextRobot = (
   state: SimulationState,
+  occupied: Set<string>,
 ): {
   robots: RobotState[];
   spawnedCount: number;
@@ -126,6 +135,10 @@ const spawnNextRobot = (
   }
 
   if (nextSpawnTick === null || state.stepCount < nextSpawnTick) {
+    return { robots: state.robots, spawnedCount, nextSpawnTick };
+  }
+
+  if (occupied.has(positionKey(spawner.x, spawner.y))) {
     return { robots: state.robots, spawnedCount, nextSpawnTick };
   }
 
@@ -145,13 +158,37 @@ export const stepSimulation = (
     return state;
   }
 
-  const spawned = spawnNextRobot(state);
+  const occupied = buildOccupiedPositions(state.robots);
+  const spawned = spawnNextRobot(state, occupied);
+  const nextOccupied = buildOccupiedPositions(spawned.robots);
   const nextRobots = spawned.robots.map((robot, index) => {
     const action = actions[index];
     if (!action) {
       return applyExitStatus(state.world, state.exits, robot);
     }
-    return applyExitStatus(state.world, state.exits, applyAction(state.world, robot, action));
+
+    let nextRobot = robot;
+    const wasBlocking = isBlockingRobot(robot);
+    if (wasBlocking) {
+      nextOccupied.delete(positionKey(robot.x, robot.y));
+    }
+
+    if (action === 'MOVE_FORWARD' && robot.alive && !robot.reachedGoal) {
+      const forward = getForwardPosition(robot, robot.direction);
+      if (!nextOccupied.has(positionKey(forward.x, forward.y))) {
+        nextRobot = applyAction(state.world, robot, action);
+      }
+    } else {
+      nextRobot = applyAction(state.world, robot, action);
+    }
+
+    nextRobot = applyExitStatus(state.world, state.exits, nextRobot);
+
+    if (isBlockingRobot(nextRobot)) {
+      nextOccupied.add(positionKey(nextRobot.x, nextRobot.y));
+    }
+
+    return nextRobot;
   });
   const stepCount = state.stepCount + 1;
   const savedCount = nextRobots.filter((robot) => robot.reachedGoal).length;

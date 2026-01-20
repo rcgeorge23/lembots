@@ -33,7 +33,7 @@ Backend: not required for this stage.
 - [x] PR-1: Multi-robot core + level schema updates
 - [x] PR-2: UI/UX for multi-robot (counters + inspect/debug)
 - [x] PR-3: Exit + quota win condition (save N of M)
-- [ ] PR-4: Collisions + queueing rules
+- [x] PR-4: Collisions + queueing rules
 - [ ] PR-5: Pressure plates + doors (first true cooperation puzzles)
 - [ ] PR-6: Level pack “Co-op World 1” (6–10 levels)
 - [ ] PR-7 (optional): Global signal (simple coordination primitive)
