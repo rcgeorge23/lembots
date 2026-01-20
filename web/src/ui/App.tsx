@@ -229,6 +229,7 @@ const App = () => {
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
   const [speedMs, setSpeedMs] = useState(1000);
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
+  const [unlockAllLevels, setUnlockAllLevels] = useState(false);
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
   const [levelThumbnails, setLevelThumbnails] = useState<Record<string, string>>({});
   const [failReason, setFailReason] = useState<
@@ -1028,10 +1029,20 @@ const App = () => {
         <div className="levels-strip__header">
           <h3>Levels</h3>
           <p className="levels__hint">
-            {completedLevels.length === 0
+            {unlockAllLevels
+              ? 'All levels unlocked for testing.'
+              : completedLevels.length === 0
               ? 'Complete level 1 to unlock level 2.'
               : 'Complete a level to unlock the next one.'}
           </p>
+          <label className="levels-strip__toggle">
+            <input
+              type="checkbox"
+              checked={unlockAllLevels}
+              onChange={(event) => setUnlockAllLevels(event.target.checked)}
+            />
+            Unlock all levels
+          </label>
         </div>
         <div className="levels__grid">
           {levels.map((level, index) => {
@@ -1040,6 +1051,7 @@ const App = () => {
               index === 0 ||
               completedLevelSet.has(level.id) ||
               (previousLevel ? completedLevelSet.has(previousLevel.id) : false);
+            const canSelect = unlockAllLevels || isUnlocked;
             const isCurrent = index === levelIndex;
             const isCompleted = completedLevelSet.has(level.id);
             const thumbnail = levelThumbnails[level.id];
@@ -1051,7 +1063,7 @@ const App = () => {
                   isCompleted ? ' is-complete' : ''
                 }`}
                 onClick={() => loadLevel(index)}
-                disabled={!isUnlocked || isBusy}
+                disabled={!canSelect || isBusy}
               >
                 <div className="level-card__thumb">
                   {thumbnail ? (
@@ -1059,7 +1071,7 @@ const App = () => {
                   ) : (
                     <div className="level-card__placeholder" aria-hidden="true" />
                   )}
-                  {!isUnlocked ? <div className="level-card__lock">Locked</div> : null}
+                  {!canSelect ? <div className="level-card__lock">Locked</div> : null}
                   {isCompleted ? (
                     <div className="level-card__badge" aria-label="Completed">
                       ✓
