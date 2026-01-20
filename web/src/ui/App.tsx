@@ -95,6 +95,7 @@ const App = () => {
   const blocklyRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
+  const traceLogRef = useRef<HTMLDivElement | null>(null);
 
   const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
     const world = createWorld(level.grid);
@@ -519,6 +520,14 @@ const App = () => {
     return () => window.clearInterval(interval);
   }, [isReplaying, speedMs]);
 
+  useEffect(() => {
+    if (!traceLogRef.current) {
+      return;
+    }
+
+    traceLogRef.current.scrollTop = traceLogRef.current.scrollHeight;
+  }, [actionTrace.length]);
+
   const isBusy = isRunning || isReplaying;
   const hasReplay = lastRunActions.length > 0;
   const currentLevel = levels[levelIndex];
@@ -681,7 +690,7 @@ const App = () => {
           </div>
           <div className="controls__trace">
             <h3>Trace</h3>
-            <div className="controls__trace-log" aria-live="polite">
+            <div className="controls__trace-log" aria-live="polite" ref={traceLogRef}>
               {actionTrace.length === 0 ? (
                 <p>Build a program and step/run to see actions here.</p>
               ) : (
