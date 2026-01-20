@@ -111,6 +111,7 @@ const App = () => {
   const traceRef = useRef<RobotAction[]>([]);
   const replayIndexRef = useRef(0);
   const lastRunRef = useRef<RobotAction[]>([]);
+  const currentActionRef = useRef<RobotAction | null>(null);
 
   const loadLevel = useCallback(
     (nextIndex: number) => {
@@ -153,6 +154,10 @@ const App = () => {
   useEffect(() => {
     lastRunRef.current = lastRunActions;
   }, [lastRunActions]);
+
+  useEffect(() => {
+    currentActionRef.current = currentAction;
+  }, [currentAction]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -341,10 +346,27 @@ const App = () => {
   useEffect(() => {
     const renderer = rendererRef.current;
     if (!renderer || !renderAssets) {
-      return;
+      return undefined;
     }
-    renderer.render(simulation.world, simulation, 0);
-  }, [renderAssets, simulation]);
+
+    let animationFrame: number;
+    let lastTime = window.performance.now();
+
+    const renderLoop = (time: number) => {
+      const dt = time - lastTime;
+      lastTime = time;
+      renderer.render(simulationRef.current.world, simulationRef.current, dt, {
+        lastAction: currentActionRef.current,
+      });
+      animationFrame = window.requestAnimationFrame(renderLoop);
+    };
+
+    animationFrame = window.requestAnimationFrame(renderLoop);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [renderAssets]);
 
   useEffect(() => {
     const blocklyDiv = blocklyRef.current;
