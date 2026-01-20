@@ -235,6 +235,7 @@ const App = () => {
   const [failReason, setFailReason] = useState<
     'hazard' | 'step_limit' | 'quota' | 'unknown' | null
   >(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
@@ -761,7 +762,7 @@ const App = () => {
         : `Next spawn in ${Math.max(simulation.nextSpawnTick - simulation.stepCount, 0)} ticks.`;
 
   return (
-    <div className="app">
+    <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
       <header className="app__header">
         <div>
           <p className="app__tag">Retro Puzzle Lab</p>
@@ -820,8 +821,18 @@ const App = () => {
             ) : null}
           </div>
         </section>
-        <section className="panel panel--editor">
-          <h2>Block Editor</h2>
+        <section className="panel panel--editor" aria-label="Block editor">
+          <div className="panel__header">
+            <h2>Block Editor</h2>
+            <button
+              type="button"
+              className="panel__close"
+              onClick={() => setIsEditorOpen(false)}
+              aria-label="Close block editor"
+            >
+              ✕
+            </button>
+          </div>
           <div className="blockly-host" ref={blocklyRef} />
         </section>
         <section className="panel panel--controls">
@@ -1025,6 +1036,44 @@ const App = () => {
           </div>
         </section>
       </main>
+      <div className="editor-backdrop" onClick={() => setIsEditorOpen(false)} aria-hidden />
+      <div className="mobile-console" role="region" aria-label="Quick controls">
+        <div className="mobile-console__info">
+          <div>
+            <span className="mobile-console__label">Status</span>
+            <span className="mobile-console__value">{statusLabel}</span>
+          </div>
+          <div>
+            <span className="mobile-console__label">Speed</span>
+            <span className="mobile-console__value">{activeSpeedOption?.label ?? '—'}</span>
+          </div>
+          <div>
+            <span className="mobile-console__label">Steps</span>
+            <span className="mobile-console__value">{simulation.stepCount}</span>
+          </div>
+        </div>
+        <div className="mobile-console__actions">
+          <button type="button" onClick={handleRun} disabled={isBusy}>
+            Run
+          </button>
+          <button type="button" onClick={handlePause} disabled={!isBusy}>
+            {isReplaying ? 'Stop' : 'Pause'}
+          </button>
+          <button type="button" onClick={handleStep} disabled={isBusy}>
+            Step
+          </button>
+          <button type="button" onClick={handleReset}>
+            Reset
+          </button>
+          <button
+            type="button"
+            className="mobile-console__editor"
+            onClick={() => setIsEditorOpen(true)}
+          >
+            Blocks
+          </button>
+        </div>
+      </div>
       <section className="levels-strip" aria-label="Level selection">
         <div className="levels-strip__header">
           <h3>Levels</h3>
