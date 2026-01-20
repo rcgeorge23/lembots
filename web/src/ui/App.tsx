@@ -5,7 +5,7 @@ import { compileWorkspace } from '../blocks/compile';
 import { createVm, stepVm, type VmState } from '../blocks/vm';
 import { createRobotState, type RobotAction } from '../engine/robot';
 import { createSimulation, stepSimulation, type SimulationState } from '../engine/sim';
-import { createWorld } from '../engine/world';
+import { TileType, createWorld } from '../engine/world';
 import { CanvasRenderer } from '../render/CanvasRenderer';
 import { loadRenderAssets } from '../render/assets';
 import type { RenderAssets } from '../render/Renderer';
@@ -36,6 +36,13 @@ const actionLabels: Record<RobotAction, string> = {
   TURN_RIGHT: 'Turn Right',
   WAIT: 'Wait',
 };
+const tileKeyByType: Record<TileType, string> = {
+  [TileType.Empty]: 'floor',
+  [TileType.Wall]: 'wall',
+  [TileType.Goal]: 'goal',
+  [TileType.Hazard]: 'hazard',
+};
+const thumbnailTileSize = 12;
 
 interface LevelDefinition {
   id: string;
@@ -109,6 +116,8 @@ const App = () => {
   const [speedMs, setSpeedMs] = useState(1000);
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
+  const [levelThumbnails, setLevelThumbnails] = useState<Record<string, string>>({});
+  const [failReason, setFailReason] = useState<'hazard' | 'step_limit' | 'unknown' | null>(null);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -135,6 +144,7 @@ const App = () => {
       setLastRunActions([]);
       setActionTrace([]);
       setCurrentAction(null);
+      setFailReason(null);
       traceRef.current = [];
       replayIndexRef.current = 0;
     },
@@ -243,6 +253,21 @@ const App = () => {
     setSimulation(nextSimulation);
     setVmState(vmResult.state);
 
+    if (nextSimulation.status === 'lost') {
+      const reachedLimit =
+        vmResult.state.status === 'step_limit' ||
+        nextSimulation.stepCount >= nextSimulation.maxSteps;
+      if (reachedLimit) {
+        setFailReason('step_limit');
+      } else if (!nextSimulation.robot.alive) {
+        setFailReason('hazard');
+      } else {
+        setFailReason('unknown');
+      }
+    } else if (nextSimulation.status === 'won') {
+      setFailReason(null);
+    }
+
     if (
       nextSimulation.status !== 'running' ||
       vmResult.state.status !== 'running'
@@ -277,6 +302,7 @@ const App = () => {
     setVmState(null);
     setActionTrace([]);
     setCurrentAction(null);
+    setFailReason(null);
     traceRef.current = [];
   };
 
@@ -292,6 +318,7 @@ const App = () => {
     replayIndexRef.current = 0;
     setActionTrace([]);
     setCurrentAction(null);
+    setFailReason(null);
     traceRef.current = [];
   };
 
@@ -322,6 +349,49 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    if (!renderAssets || typeof document === 'undefined') {
+      return;
+    }
+
+    const thumbnails: Record<string, string> = {};
+    levels.forEach((level) => {
+      const world = createWorld(level.grid);
+      const canvas = document.createElement('canvas');
+      canvas.width = world.width * thumbnailTileSize;
+      canvas.height = world.height * thumbnailTileSize;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return;
+      }
+      ctx.imageSmoothingEnabled = false;
+      const scale = thumbnailTileSize / renderAssets.tilesAtlas.tileSize;
+      for (let row = 0; row < world.height; row += 1) {
+        for (let col = 0; col < world.width; col += 1) {
+          const tile = world.grid[row][col];
+          const tileKey = tileKeyByType[tile] ?? 'floor';
+          const sprite = renderAssets.tilesAtlas.tiles[tileKey];
+          if (!sprite) {
+            continue;
+          }
+          ctx.drawImage(
+            renderAssets.tilesImage,
+            sprite.x,
+            sprite.y,
+            sprite.w,
+            sprite.h,
+            col * thumbnailTileSize,
+            row * thumbnailTileSize,
+            sprite.w * scale,
+            sprite.h * scale,
+          );
+        }
+      }
+      thumbnails[level.id] = canvas.toDataURL('image/png');
+    });
+    setLevelThumbnails(thumbnails);
+  }, [renderAssets]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !renderAssets) {
       return;
@@ -331,23 +401,6 @@ const App = () => {
     renderer.init(canvas, renderAssets);
     rendererRef.current = renderer;
   }, [renderAssets]);
-
-  useEffect(() => {
-    if (simulation.status !== 'won' || isReplaying) {
-      return undefined;
-    }
-
-    const nextIndex = levelIndex + 1;
-    if (nextIndex >= levels.length) {
-      return undefined;
-    }
-
-    const timeout = window.setTimeout(() => {
-      loadLevel(nextIndex);
-    }, 800);
-
-    return () => window.clearTimeout(timeout);
-  }, [simulation.status, levelIndex, isReplaying, loadLevel]);
 
   useEffect(() => {
     const renderer = rendererRef.current;
@@ -451,6 +504,13 @@ const App = () => {
   const currentLevel = levels[levelIndex];
   const hasNextLevel = levelIndex + 1 < levels.length;
   const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
+  const showOverlay = (simulation.status === 'won' || simulation.status === 'lost') && !isReplaying;
+  const failMessage =
+    failReason === 'hazard'
+      ? 'Robot hit a hazard.'
+      : failReason === 'step_limit'
+        ? 'Too many steps without reaching the goal.'
+        : 'Program failed.';
 
   const statusTone =
     simulation.status === 'won'
@@ -490,11 +550,46 @@ const App = () => {
       <main className="app__main">
         <section className="panel panel--sim">
           <h2>Simulation</h2>
-          <canvas
-            ref={canvasRef}
-            width={simulation.world.width * TILE_SIZE}
-            height={simulation.world.height * TILE_SIZE}
-          />
+          <div className="sim-surface">
+            <canvas
+              ref={canvasRef}
+              width={simulation.world.width * TILE_SIZE}
+              height={simulation.world.height * TILE_SIZE}
+            />
+            {showOverlay ? (
+              <div className={`sim-overlay sim-overlay--${simulation.status}`}>
+                <div className="sim-overlay__card">
+                  <p className="sim-overlay__eyebrow">
+                    {simulation.status === 'won' ? 'Level Complete' : 'Try Again'}
+                  </p>
+                  <h3>
+                    {simulation.status === 'won'
+                      ? 'Robot reached the goal!'
+                      : 'Robot lost in the maze.'}
+                  </h3>
+                  <p className="sim-overlay__hint">
+                    {simulation.status === 'won' ? 'Great job! Ready for the next challenge?' : failMessage}
+                  </p>
+                  <div className="sim-overlay__actions">
+                    {simulation.status === 'won' && hasNextLevel ? (
+                      <button type="button" onClick={() => loadLevel(levelIndex + 1)}>
+                        Next Level
+                      </button>
+                    ) : (
+                      <button type="button" onClick={handleReset}>
+                        Reset
+                      </button>
+                    )}
+                    {hasReplay ? (
+                      <button type="button" onClick={handleReplay}>
+                        Replay
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </section>
         <section className="panel panel--editor">
           <h2>Block Editor</h2>
@@ -512,15 +607,37 @@ const App = () => {
                   completedLevelSet.has(level.id) ||
                   (previousLevel ? completedLevelSet.has(previousLevel.id) : false);
                 const isCurrent = index === levelIndex;
+                const isCompleted = completedLevelSet.has(level.id);
+                const thumbnail = levelThumbnails[level.id];
                 return (
                   <button
                     key={level.id}
                     type="button"
-                    className={`levels__button${isCurrent ? ' is-current' : ''}`}
+                    className={`level-card${isCurrent ? ' is-current' : ''}${
+                      isCompleted ? ' is-complete' : ''
+                    }`}
                     onClick={() => loadLevel(index)}
                     disabled={!isUnlocked || isBusy}
                   >
-                    {index + 1}
+                    <div className="level-card__thumb">
+                      {thumbnail ? (
+                        <img src={thumbnail} alt={`Level ${index + 1} preview`} />
+                      ) : (
+                        <div className="level-card__placeholder" aria-hidden="true" />
+                      )}
+                      {!isUnlocked ? (
+                        <div className="level-card__lock">Locked</div>
+                      ) : null}
+                      {isCompleted ? (
+                        <div className="level-card__badge" aria-label="Completed">
+                          ✓
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="level-card__info">
+                      <p className="level-card__number">Level {index + 1}</p>
+                      <p className="level-card__name">{level.name}</p>
+                    </div>
                   </button>
                 );
               })}
