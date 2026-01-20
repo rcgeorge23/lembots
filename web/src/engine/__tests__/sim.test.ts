@@ -13,6 +13,13 @@ const buildWorld = () =>
     [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
   ]);
 
+const buildOpenWorld = () =>
+  createWorld([
+    [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
+    [TileType.Wall, TileType.Empty, TileType.Empty, TileType.Empty, TileType.Wall],
+    [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
+  ]);
+
 describe('simulation rules', () => {
   it('moves forward when the path is clear', () => {
     const world = buildWorld();
@@ -93,5 +100,61 @@ describe('simulation rules', () => {
     const next = stepSimulation(sim, ['MOVE_FORWARD']);
 
     expect(next.status).toBe('lost');
+  });
+
+  it('queues robots so they can follow into cleared spaces', () => {
+    const world = buildOpenWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 0, intervalTicks: 0 },
+    });
+
+    const next = stepSimulation(
+      {
+        ...sim,
+        robots: [
+          { ...createRobotState(2, 1, 1, 'robot-1') },
+          { ...createRobotState(1, 1, 1, 'robot-2') },
+        ],
+      },
+      ['MOVE_FORWARD', 'MOVE_FORWARD'],
+    );
+
+    expect(next.robots[0].x).toBe(3);
+    expect(next.robots[1].x).toBe(2);
+  });
+
+  it('blocks robots from moving into occupied tiles', () => {
+    const world = buildOpenWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 0, intervalTicks: 0 },
+    });
+
+    const next = stepSimulation(
+      {
+        ...sim,
+        robots: [
+          { ...createRobotState(2, 1, 1, 'robot-1') },
+          { ...createRobotState(1, 1, 1, 'robot-2') },
+        ],
+      },
+      ['WAIT', 'MOVE_FORWARD'],
+    );
+
+    expect(next.robots[1].x).toBe(1);
+  });
+
+  it('delays spawns when the entry tile is occupied', () => {
+    const world = buildOpenWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 2, intervalTicks: 1 },
+    });
+    const next = stepSimulation({ ...sim, stepCount: 1 }, ['WAIT']);
+
+    expect(next.robots.length).toBe(1);
+    expect(next.spawnedCount).toBe(1);
+    expect(next.nextSpawnTick).toBe(1);
   });
 });
