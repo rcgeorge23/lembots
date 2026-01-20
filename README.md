@@ -210,7 +210,7 @@ Each task should be completed in a deployable state and include appropriate test
 3. [x] **Integrate Blockly and compile blocks**
    - Define the MVP block set in `src/blocks/`.
    - Compile blocks to a safe AST/bytecode and execute via a VM.
-4. [ ] **Wire UI controls to the simulation**
+4. [x] **Wire UI controls to the simulation**
    - Run/Pause/Step/Reset controls drive the VM and simulation state.
    - Render the grid and robot in the canvas.
 5. [ ] **Create the initial level pack**
