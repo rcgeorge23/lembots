@@ -75,4 +75,23 @@ describe('simulation rules', () => {
 
     expect(next.status).toBe('won');
   });
+
+  it('loses when the exit quota is not met after all robots finish', () => {
+    const world = buildWorld();
+    const robot = createRobotState(1, 1, 1);
+    const sim = createSimulation({
+      world,
+      spawner: {
+        x: robot.x,
+        y: robot.y,
+        dir: robot.direction,
+        count: 1,
+        intervalTicks: 0,
+      },
+      requiredSaved: 2,
+    });
+    const next = stepSimulation(sim, ['MOVE_FORWARD']);
+
+    expect(next.status).toBe('lost');
+  });
 });

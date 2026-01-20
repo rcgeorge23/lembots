@@ -32,7 +32,7 @@ Backend: not required for this stage.
 ## Milestone overview (PR-sized chunks)
 - [x] PR-1: Multi-robot core + level schema updates
 - [x] PR-2: UI/UX for multi-robot (counters + inspect/debug)
-- [ ] PR-3: Exit + quota win condition (save N of M)
+- [x] PR-3: Exit + quota win condition (save N of M)
 - [ ] PR-4: Collisions + queueing rules
 - [ ] PR-5: Pressure plates + doors (first true cooperation puzzles)
 - [ ] PR-6: Level pack “Co-op World 1” (6–10 levels)

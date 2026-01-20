@@ -8,6 +8,7 @@ export type VmStatus = 'running' | 'done' | 'step_limit';
 export interface VmContext {
   world: World;
   robot: RobotState;
+  exits: { x: number; y: number }[];
 }
 
 interface SequenceFrame {
@@ -54,7 +55,11 @@ export const createVm = (program: ProgramNode, maxSteps = 200): VmState => ({
 });
 
 const evaluateCondition = (condition: ConditionType, context: VmContext): boolean => {
-  const { world, robot } = context;
+  const { world, robot, exits } = context;
+  const isOnExit =
+    exits.length > 0
+      ? exits.some((exit) => exit.x === robot.x && exit.y === robot.y)
+      : isGoal(world, robot.x, robot.y);
 
   switch (condition) {
     case 'PATH_AHEAD_CLEAR': {
@@ -62,7 +67,7 @@ const evaluateCondition = (condition: ConditionType, context: VmContext): boolea
       return !isWall(world, forward.x, forward.y);
     }
     case 'ON_GOAL':
-      return isGoal(world, robot.x, robot.y);
+      return isOnExit;
     case 'HAZARD_AHEAD': {
       const forward = getForwardPosition(robot, robot.direction);
       return isHazard(world, forward.x, forward.y);

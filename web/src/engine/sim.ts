@@ -1,6 +1,7 @@
 import type { Direction, RobotAction, RobotState } from './robot';
 import type { World } from './world';
 import { applyAction } from './rules';
+import { isGoal } from './world';
 
 export type SimulationStatus = 'running' | 'won' | 'lost';
 
@@ -38,6 +39,21 @@ export interface SimulationConfig {
   requiredSaved?: number;
 }
 
+const isExitTile = (world: World, exits: Exit[], x: number, y: number): boolean =>
+  exits.length > 0 ? exits.some((exit) => exit.x === x && exit.y === y) : isGoal(world, x, y);
+
+const applyExitStatus = (world: World, exits: Exit[], robot: RobotState): RobotState => {
+  if (robot.reachedGoal) {
+    return robot;
+  }
+
+  if (isExitTile(world, exits, robot.x, robot.y)) {
+    return { ...robot, reachedGoal: true };
+  }
+
+  return robot;
+};
+
 const createSpawnedRobot = (spawner: Spawner, index: number): RobotState => ({
   id: `robot-${index + 1}`,
   x: spawner.x,
@@ -47,7 +63,7 @@ const createSpawnedRobot = (spawner: Spawner, index: number): RobotState => ({
   reachedGoal: false,
 });
 
-const initializeRobots = (spawner: Spawner): {
+const initializeRobots = (spawner: Spawner, world: World, exits: Exit[]): {
   robots: RobotState[];
   spawnedCount: number;
   nextSpawnTick: number | null;
@@ -58,13 +74,13 @@ const initializeRobots = (spawner: Spawner): {
 
   if (spawner.intervalTicks <= 0) {
     const robots = Array.from({ length: spawner.count }, (_, index) =>
-      createSpawnedRobot(spawner, index),
+      applyExitStatus(world, exits, createSpawnedRobot(spawner, index)),
     );
     return { robots, spawnedCount: spawner.count, nextSpawnTick: null };
   }
 
   return {
-    robots: [createSpawnedRobot(spawner, 0)],
+    robots: [applyExitStatus(world, exits, createSpawnedRobot(spawner, 0))],
     spawnedCount: 1,
     nextSpawnTick: spawner.intervalTicks,
   };
@@ -77,14 +93,14 @@ export const createSimulation = ({
   maxSteps = 200,
   requiredSaved = 1,
 }: SimulationConfig): SimulationState => {
-  const { robots, spawnedCount, nextSpawnTick } = initializeRobots(spawner);
-  const hasReachedGoal = robots.some((robot) => robot.reachedGoal);
+  const { robots, spawnedCount, nextSpawnTick } = initializeRobots(spawner, world, exits);
+  const savedCount = robots.filter((robot) => robot.reachedGoal).length;
   return {
     world,
     robots,
     spawner,
     exits,
-    status: hasReachedGoal ? 'won' : 'running',
+    status: savedCount >= requiredSaved ? 'won' : 'running',
     stepCount: 0,
     maxSteps,
     requiredSaved,
@@ -133,16 +149,16 @@ export const stepSimulation = (
   const nextRobots = spawned.robots.map((robot, index) => {
     const action = actions[index];
     if (!action) {
-      return robot;
+      return applyExitStatus(state.world, state.exits, robot);
     }
-    return applyAction(state.world, robot, action);
+    return applyExitStatus(state.world, state.exits, applyAction(state.world, robot, action));
   });
   const stepCount = state.stepCount + 1;
-  const hasReachedGoal = nextRobots.some((robot) => robot.reachedGoal);
-  const hasAliveRobot = nextRobots.some((robot) => robot.alive);
+  const savedCount = nextRobots.filter((robot) => robot.reachedGoal).length;
+  const hasActiveRobot = nextRobots.some((robot) => robot.alive && !robot.reachedGoal);
   const hasRemainingSpawns = spawned.spawnedCount < state.spawner.count;
 
-  if (hasReachedGoal) {
+  if (savedCount >= state.requiredSaved) {
     return {
       ...state,
       robots: nextRobots,
@@ -164,7 +180,7 @@ export const stepSimulation = (
     };
   }
 
-  if (!hasAliveRobot && !hasRemainingSpawns) {
+  if (!hasActiveRobot && !hasRemainingSpawns) {
     return {
       ...state,
       robots: nextRobots,
