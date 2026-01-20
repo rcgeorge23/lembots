@@ -125,7 +125,7 @@ Move from drawing rectangles to a proper 2D pipeline:
 
 ## Implementation plan for Codex (next tasks)
 
-### Task 1 — Introduce a renderer abstraction
+### Task 1 — Introduce a renderer abstraction [x]
 **Goal:** decouple engine state from how it is drawn.
 
 - Create `src/render/Renderer.ts` interface:
@@ -140,7 +140,7 @@ Move from drawing rectangles to a proper 2D pipeline:
 
 ---
 
-### Task 2 — Add pixel-art pipeline (atlas + sprites)
+### Task 2 — Add pixel-art pipeline (atlas + sprites) [x]
 **Goal:** render tiles and robot from images with crisp scaling.
 
 - Add asset loader:
