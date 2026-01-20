@@ -24,6 +24,12 @@ import level12 from '../levels/builtin/level-12.json';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
+const speedOptions = [
+  { label: '0.5x', value: 2000 },
+  { label: '1x', value: 1000 },
+  { label: '2x', value: 500 },
+  { label: '4x', value: 250 },
+];
 const actionLabels: Record<RobotAction, string> = {
   MOVE_FORWARD: 'Move Forward',
   TURN_LEFT: 'Turn Left',
@@ -100,7 +106,7 @@ const App = () => {
   const [lastRunActions, setLastRunActions] = useState<RobotAction[]>([]);
   const [actionTrace, setActionTrace] = useState<RobotAction[]>([]);
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
-  const [speedMs, setSpeedMs] = useState(500);
+  const [speedMs, setSpeedMs] = useState(1000);
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
 
@@ -444,18 +450,45 @@ const App = () => {
   const hasReplay = lastRunActions.length > 0;
   const currentLevel = levels[levelIndex];
   const hasNextLevel = levelIndex + 1 < levels.length;
+  const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
+
+  const statusTone =
+    simulation.status === 'won'
+      ? 'success'
+      : simulation.status === 'lost'
+        ? 'danger'
+        : isRunning || isReplaying
+          ? 'warning'
+          : 'idle';
+  const statusLabel =
+    simulation.status === 'won'
+      ? hasNextLevel
+        ? 'Level Complete'
+        : 'All Levels Complete'
+      : simulation.status === 'lost'
+        ? 'Robot Lost'
+        : isRunning
+          ? 'Running'
+          : isReplaying
+            ? 'Replaying'
+            : 'Ready';
 
   return (
     <div className="app">
       <header className="app__header">
-        <h1>LemBots</h1>
-        <p>
-          Scratch-like blocks + robot simulation (scaffold) — Level {levelIndex + 1}:{' '}
-          {currentLevel.name}
-        </p>
+        <div>
+          <p className="app__tag">Retro Puzzle Lab</p>
+          <h1>LemBots</h1>
+        </div>
+        <div className="app__meta">
+          <p>
+            Level {levelIndex + 1}: <strong>{currentLevel.name}</strong>
+          </p>
+          <p className="app__subtitle">Program. Run. Watch the bot learn.</p>
+        </div>
       </header>
       <main className="app__main">
-        <section className="panel">
+        <section className="panel panel--sim">
           <h2>Simulation</h2>
           <canvas
             ref={canvasRef}
@@ -463,12 +496,12 @@ const App = () => {
             height={simulation.world.height * TILE_SIZE}
           />
         </section>
-        <section className="panel">
+        <section className="panel panel--editor">
           <h2>Block Editor</h2>
           <div className="blockly-host" ref={blocklyRef} />
         </section>
-        <section className="panel">
-          <h2>Controls</h2>
+        <section className="panel panel--controls">
+          <h2>Command Console</h2>
           <div className="levels">
             <h3>Levels</h3>
             <div className="levels__grid">
@@ -498,52 +531,67 @@ const App = () => {
                 : 'Complete a level to unlock the next one.'}
             </p>
           </div>
-          <div className="controls">
-            <button type="button" onClick={handleRun} disabled={isBusy}>
-              Run
-            </button>
-            <button type="button" onClick={handlePause} disabled={!isBusy}>
-              {isReplaying ? 'Stop Replay' : 'Pause'}
-            </button>
-            <button type="button" onClick={handleStep} disabled={isBusy}>
-              Step
-            </button>
-            <button type="button" onClick={handleReset}>
-              Reset
-            </button>
-            <button type="button" onClick={handleReplay} disabled={!hasReplay || isBusy}>
-              Replay
-            </button>
-          </div>
-          <div className="controls__speed">
-            <label htmlFor="speed">
-              Speed: <strong>{(1000 / speedMs).toFixed(1)}x</strong>
-            </label>
-            <input
-              id="speed"
-              type="range"
-              min={200}
-              max={1000}
-              step={100}
-              value={speedMs}
-              onChange={(event) => setSpeedMs(Number(event.target.value))}
-              disabled={isReplaying}
-            />
-          </div>
-          <div className="controls__status">
-            <p>
-              Status: {simulation.status}
-              {simulation.status === 'running' && isRunning ? ' (running)' : ''}
-              {simulation.status === 'running' && isReplaying ? ' (replay)' : ''}
-              {simulation.status === 'won'
-                ? hasNextLevel
-                  ? ' (advancing...)'
-                  : ' (all levels complete!)'
-                : ''}
-            </p>
-            <p>Steps: {simulation.stepCount}</p>
-            <p>VM: {vmState?.status ?? 'idle'}</p>
-            <p>Current: {currentAction ? actionLabels[currentAction] : '—'}</p>
+          <div className="console">
+            <div className="console__controls">
+              <button type="button" onClick={handleRun} disabled={isBusy}>
+                Run
+              </button>
+              <button type="button" onClick={handlePause} disabled={!isBusy}>
+                {isReplaying ? 'Stop Replay' : 'Pause'}
+              </button>
+              <button type="button" onClick={handleStep} disabled={isBusy}>
+                Step
+              </button>
+              <button type="button" onClick={handleReset}>
+                Reset
+              </button>
+              <button type="button" onClick={handleReplay} disabled={!hasReplay || isBusy}>
+                Replay
+              </button>
+            </div>
+            <div className="console__speed">
+              <p>Speed</p>
+              <div className="speed-toggle" role="group" aria-label="Simulation speed">
+                {speedOptions.map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    className={option.value === speedMs ? 'is-active' : undefined}
+                    onClick={() => setSpeedMs(option.value)}
+                    disabled={isReplaying}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="console__status">
+              <div className="status-card">
+                <span className={`status-lamp status-lamp--${statusTone}`} aria-hidden="true" />
+                <div>
+                  <p className="status-card__label">Status</p>
+                  <p className="status-card__value">{statusLabel}</p>
+                </div>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">Speed</p>
+                <p className="status-card__value">{activeSpeedOption?.label ?? '—'}</p>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">Steps</p>
+                <p className="status-card__value">{simulation.stepCount}</p>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">VM</p>
+                <p className="status-card__value">{vmState?.status ?? 'idle'}</p>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">Current</p>
+                <p className="status-card__value">
+                  {currentAction ? actionLabels[currentAction] : '—'}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="controls__trace">
             <h3>Trace</h3>
