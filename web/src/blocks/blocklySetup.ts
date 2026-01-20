@@ -120,6 +120,12 @@ const CONDITION_BLOCKS = [
     colour: 30,
   },
   {
+    type: 'lembot_hazard_ahead',
+    message0: 'hazard ahead?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
     type: 'lembot_hazard_right',
     message0: 'hazard to the right?',
     output: 'Boolean',

@@ -63,6 +63,10 @@ const evaluateCondition = (condition: ConditionType, context: VmContext): boolea
     }
     case 'ON_GOAL':
       return isGoal(world, robot.x, robot.y);
+    case 'HAZARD_AHEAD': {
+      const forward = getForwardPosition(robot, robot.direction);
+      return isHazard(world, forward.x, forward.y);
+    }
     case 'HAZARD_RIGHT': {
       const rightDirection = turnRight(robot.direction);
       const right = getForwardPosition(robot, rightDirection);
