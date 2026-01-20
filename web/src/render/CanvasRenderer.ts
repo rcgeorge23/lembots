@@ -1,3 +1,4 @@
+import type { RobotAction } from '../engine/robot';
 import type { SimulationState } from '../engine/sim';
 import { TileType, type World } from '../engine/world';
 import type { RenderAssets, RenderContext, Renderer, SpriteFrame } from './Renderer';
@@ -17,6 +18,12 @@ const animationDurations: Record<RobotAnim, number> = {
   bump: 180,
   win: 400,
   fail: 900,
+};
+const actionIndicatorLabels: Record<RobotAction, string> = {
+  MOVE_FORWARD: 'MOVE',
+  TURN_LEFT: 'LEFT',
+  TURN_RIGHT: 'RIGHT',
+  WAIT: 'WAIT',
 };
 
 export class CanvasRenderer implements Renderer {
@@ -90,6 +97,9 @@ export class CanvasRenderer implements Renderer {
     const centerX = (robot.x + 0.5) * this.tileSize;
     const centerY = (robot.y + 0.5) * this.tileSize;
     this.drawRobot(ctx, assets, centerX, centerY, robot.direction, simulation, context, dt);
+    if (context?.lastAction) {
+      this.drawRobotIndicator(ctx, centerX, centerY, actionIndicatorLabels[context.lastAction]);
+    }
 
     this.lastRobotX = robot.x;
     this.lastRobotY = robot.y;
@@ -202,5 +212,60 @@ export class CanvasRenderer implements Renderer {
     }
 
     return 'idle';
+  }
+
+  private drawRobotIndicator(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    centerY: number,
+    label: string,
+  ) {
+    const paddingX = 6;
+    const bubbleHeight = 18;
+    const bubbleOffset = this.tileSize * 0.7;
+    const pointerHeight = 6;
+
+    ctx.save();
+    ctx.font = '11px "Share Tech Mono", "SFMono-Regular", ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const textWidth = ctx.measureText(label).width;
+    const bubbleWidth = Math.max(40, textWidth + paddingX * 2);
+    const bubbleX = centerX - bubbleWidth / 2;
+    let bubbleY = centerY - bubbleOffset - bubbleHeight;
+    bubbleY = Math.max(2, bubbleY);
+    const radius = 6;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + radius, bubbleY);
+    ctx.arcTo(bubbleX + bubbleWidth, bubbleY, bubbleX + bubbleWidth, bubbleY + bubbleHeight, radius);
+    ctx.arcTo(
+      bubbleX + bubbleWidth,
+      bubbleY + bubbleHeight,
+      bubbleX,
+      bubbleY + bubbleHeight,
+      radius,
+    );
+    ctx.arcTo(bubbleX, bubbleY + bubbleHeight, bubbleX, bubbleY, radius);
+    ctx.arcTo(bubbleX, bubbleY, bubbleX + bubbleWidth, bubbleY, radius);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const pointerY = bubbleY + bubbleHeight;
+    ctx.beginPath();
+    ctx.moveTo(centerX - 5, pointerY);
+    ctx.lineTo(centerX + 5, pointerY);
+    ctx.lineTo(centerX, pointerY + pointerHeight);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillText(label, centerX, bubbleY + bubbleHeight / 2);
+    ctx.restore();
   }
 }
