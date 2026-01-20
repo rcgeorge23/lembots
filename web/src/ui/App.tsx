@@ -5,7 +5,10 @@ import { compileWorkspace } from '../blocks/compile';
 import { createVm, stepVm, type VmState } from '../blocks/vm';
 import { createRobotState, type RobotAction } from '../engine/robot';
 import { createSimulation, stepSimulation, type SimulationState } from '../engine/sim';
-import { TileType, createWorld } from '../engine/world';
+import { createWorld } from '../engine/world';
+import { CanvasRenderer } from '../render/CanvasRenderer';
+import { loadRenderAssets } from '../render/assets';
+import type { RenderAssets } from '../render/Renderer';
 import level01 from '../levels/builtin/level-01.json';
 import level02 from '../levels/builtin/level-02.json';
 import level03 from '../levels/builtin/level-03.json';
@@ -74,144 +77,11 @@ const loadCompletedLevels = (): string[] => {
   return [];
 };
 
-const drawGoalIcon = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-) => {
-  const centerX = x + size / 2;
-  const centerY = y + size / 2;
-  const outerRadius = size * 0.22;
-  const innerRadius = size * 0.1;
-  ctx.fillStyle = '#facc15';
-  ctx.beginPath();
-  for (let i = 0; i < 10; i += 1) {
-    const angle = (Math.PI / 5) * i - Math.PI / 2;
-    const radius = i % 2 === 0 ? outerRadius : innerRadius;
-    ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
-  }
-  ctx.closePath();
-  ctx.fill();
-};
-
-const drawHazardIcon = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-) => {
-  ctx.fillStyle = '#fee2e2';
-  ctx.beginPath();
-  ctx.moveTo(x + size / 2, y + size * 0.18);
-  ctx.lineTo(x + size * 0.82, y + size * 0.78);
-  ctx.lineTo(x + size * 0.18, y + size * 0.78);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#ef4444';
-  ctx.fillRect(x + size / 2 - 1.5, y + size * 0.34, 3, size * 0.26);
-  ctx.beginPath();
-  ctx.arc(x + size / 2, y + size * 0.67, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-};
-
-const drawWallIcon = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-) => {
-  ctx.strokeStyle = '#1e293b';
-  ctx.lineWidth = 1;
-  const brickHeight = size / 3;
-  ctx.beginPath();
-  ctx.moveTo(x, y + brickHeight);
-  ctx.lineTo(x + size, y + brickHeight);
-  ctx.moveTo(x, y + brickHeight * 2);
-  ctx.lineTo(x + size, y + brickHeight * 2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x + size * 0.5, y);
-  ctx.lineTo(x + size * 0.5, y + brickHeight);
-  ctx.moveTo(x + size * 0.25, y + brickHeight);
-  ctx.lineTo(x + size * 0.25, y + brickHeight * 2);
-  ctx.moveTo(x + size * 0.75, y + brickHeight * 2);
-  ctx.lineTo(x + size * 0.75, y + size);
-  ctx.stroke();
-};
-
-const drawRobotSprite = (
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  direction: number,
-  alive: boolean,
-) => {
-  const bodySize = TILE_SIZE * 0.55;
-  const radius = 6;
-  ctx.fillStyle = alive ? '#0f172a' : '#94a3b8';
-  ctx.beginPath();
-  ctx.moveTo(centerX - bodySize / 2 + radius, centerY - bodySize / 2);
-  ctx.lineTo(centerX + bodySize / 2 - radius, centerY - bodySize / 2);
-  ctx.quadraticCurveTo(
-    centerX + bodySize / 2,
-    centerY - bodySize / 2,
-    centerX + bodySize / 2,
-    centerY - bodySize / 2 + radius,
-  );
-  ctx.lineTo(centerX + bodySize / 2, centerY + bodySize / 2 - radius);
-  ctx.quadraticCurveTo(
-    centerX + bodySize / 2,
-    centerY + bodySize / 2,
-    centerX + bodySize / 2 - radius,
-    centerY + bodySize / 2,
-  );
-  ctx.lineTo(centerX - bodySize / 2 + radius, centerY + bodySize / 2);
-  ctx.quadraticCurveTo(
-    centerX - bodySize / 2,
-    centerY + bodySize / 2,
-    centerX - bodySize / 2,
-    centerY + bodySize / 2 - radius,
-  );
-  ctx.lineTo(centerX - bodySize / 2, centerY - bodySize / 2 + radius);
-  ctx.quadraticCurveTo(
-    centerX - bodySize / 2,
-    centerY - bodySize / 2,
-    centerX - bodySize / 2 + radius,
-    centerY - bodySize / 2,
-  );
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#e2e8f0';
-  ctx.beginPath();
-  ctx.arc(centerX - bodySize * 0.12, centerY - bodySize * 0.1, 3, 0, Math.PI * 2);
-  ctx.arc(centerX + bodySize * 0.12, centerY - bodySize * 0.1, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#f97316';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY);
-  const directionOffset = TILE_SIZE * 0.3;
-  const directionVectors = [
-    { x: 0, y: -directionOffset },
-    { x: directionOffset, y: 0 },
-    { x: 0, y: directionOffset },
-    { x: -directionOffset, y: 0 },
-  ];
-  const vector = directionVectors[direction];
-  ctx.lineTo(centerX + vector.x, centerY + vector.y);
-  ctx.stroke();
-  ctx.lineWidth = 1;
-};
-
 const App = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const blocklyRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const rendererRef = useRef<CanvasRenderer | null>(null);
 
   const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
     const world = createWorld(level.grid);
@@ -232,6 +102,7 @@ const App = () => {
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
   const [speedMs, setSpeedMs] = useState(500);
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
+  const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -423,6 +294,34 @@ const App = () => {
   }, [vmState]);
 
   useEffect(() => {
+    let isMounted = true;
+    loadRenderAssets()
+      .then((assets) => {
+        if (isMounted) {
+          setRenderAssets(assets);
+        }
+      })
+      .catch((error) => {
+        console.error('Unable to load render assets.', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !renderAssets) {
+      return;
+    }
+
+    const renderer = rendererRef.current ?? new CanvasRenderer(TILE_SIZE);
+    renderer.init(canvas, renderAssets);
+    rendererRef.current = renderer;
+  }, [renderAssets]);
+
+  useEffect(() => {
     if (simulation.status !== 'won' || isReplaying) {
       return undefined;
     }
@@ -440,60 +339,12 @@ const App = () => {
   }, [simulation.status, levelIndex, isReplaying, loadLevel]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = simulation.world.width * TILE_SIZE;
-    const height = simulation.world.height * TILE_SIZE;
-
-    if (canvas.width !== width) {
-      canvas.width = width;
+    const renderer = rendererRef.current;
+    if (!renderer || !renderAssets) {
+      return;
     }
-    if (canvas.height !== height) {
-      canvas.height = height;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let row = 0; row < simulation.world.height; row += 1) {
-      for (let col = 0; col < simulation.world.width; col += 1) {
-        const tile = simulation.world.grid[row][col];
-        if (tile === TileType.Wall) {
-          ctx.fillStyle = '#334155';
-        } else if (tile === TileType.Goal) {
-          ctx.fillStyle = '#166534';
-        } else if (tile === TileType.Hazard) {
-          ctx.fillStyle = '#991b1b';
-        } else {
-          ctx.fillStyle = '#f8fafc';
-        }
-        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-
-        if (tile === TileType.Goal) {
-          drawGoalIcon(ctx, col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE);
-        } else if (tile === TileType.Hazard) {
-          drawHazardIcon(ctx, col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE);
-        } else if (tile === TileType.Wall) {
-          drawWallIcon(ctx, col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE);
-        }
-      }
-    }
-
-    ctx.strokeStyle = '#cbd5f5';
-    for (let row = 0; row < simulation.world.height; row += 1) {
-      for (let col = 0; col < simulation.world.width; col += 1) {
-        ctx.strokeRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
-    }
-
-    const { robot } = simulation;
-    const centerX = (robot.x + 0.5) * TILE_SIZE;
-    const centerY = (robot.y + 0.5) * TILE_SIZE;
-    drawRobotSprite(ctx, centerX, centerY, robot.direction, robot.alive);
-  }, [simulation]);
+    renderer.render(simulation.world, simulation, 0);
+  }, [renderAssets, simulation]);
 
   useEffect(() => {
     const blocklyDiv = blocklyRef.current;
