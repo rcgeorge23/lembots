@@ -213,7 +213,7 @@ Each task should be completed in a deployable state and include appropriate test
 4. [x] **Wire UI controls to the simulation**
    - Run/Pause/Step/Reset controls drive the VM and simulation state.
    - Render the grid and robot in the canvas.
-5. [ ] **Create the initial level pack**
+5. [x] **Create the initial level pack**
    - Add 10–15 JSON levels in `src/levels/builtin/`.
    - Include buttons/doors and 1–2 multi-robot levels near the end.
 6. [ ] **Polish for playability**
