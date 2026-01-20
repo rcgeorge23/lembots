@@ -1,0 +1,79 @@
+import * as Blockly from 'blockly';
+import type { AstNode, ConditionType, ProgramNode } from './types';
+
+const compileCondition = (block: Blockly.Block | null): ConditionType => {
+  if (!block) {
+    throw new Error('Missing condition block.');
+  }
+
+  switch (block.type) {
+    case 'lembot_path_ahead_clear':
+      return 'PATH_AHEAD_CLEAR';
+    case 'lembot_on_goal':
+      return 'ON_GOAL';
+    case 'lembot_on_hazard':
+      return 'ON_HAZARD';
+    default:
+      throw new Error(`Unsupported condition block: ${block.type}`);
+  }
+};
+
+const compileBlock = (block: Blockly.Block): AstNode => {
+  switch (block.type) {
+    case 'lembot_move_forward':
+      return { type: 'action', action: 'MOVE_FORWARD' };
+    case 'lembot_turn_left':
+      return { type: 'action', action: 'TURN_LEFT' };
+    case 'lembot_turn_right':
+      return { type: 'action', action: 'TURN_RIGHT' };
+    case 'lembot_wait':
+      return { type: 'action', action: 'WAIT' };
+    case 'lembot_repeat': {
+      const rawCount = Number(block.getFieldValue('COUNT'));
+      const count = Number.isFinite(rawCount) ? Math.max(0, rawCount) : 0;
+      const bodyBlock = block.getInputTargetBlock('DO');
+      return {
+        type: 'repeat',
+        count,
+        body: compileBlockChain(bodyBlock),
+      };
+    }
+    case 'lembot_if': {
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      const thenBlock = block.getInputTargetBlock('THEN');
+      const elseBlock = block.getInputTargetBlock('ELSE');
+      const elseBranch = elseBlock ? compileBlockChain(elseBlock) : undefined;
+      return {
+        type: 'if',
+        condition: compileCondition(conditionBlock),
+        thenBranch: compileBlockChain(thenBlock),
+        elseBranch,
+      };
+    }
+    default:
+      throw new Error(`Unsupported block: ${block.type}`);
+  }
+};
+
+export const compileBlockChain = (startBlock: Blockly.Block | null): ProgramNode => {
+  const steps: AstNode[] = [];
+  let block: Blockly.Block | null = startBlock;
+
+  while (block) {
+    steps.push(compileBlock(block));
+    block = block.getNextBlock();
+  }
+
+  return { type: 'sequence', steps };
+};
+
+export const compileWorkspace = (workspace: Blockly.Workspace): ProgramNode => {
+  const topBlocks = workspace.getTopBlocks(true);
+  const steps: AstNode[] = [];
+
+  topBlocks.forEach((block) => {
+    steps.push(...compileBlockChain(block).steps);
+  });
+
+  return { type: 'sequence', steps };
+};

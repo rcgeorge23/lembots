@@ -41,12 +41,12 @@ body {
   gap: 12px;
 }
 
-.placeholder {
-  border: 2px dashed #94a3b8;
+.blockly-host {
+  width: 100%;
+  min-height: 320px;
+  height: 360px;
   border-radius: 8px;
-  padding: 24px;
-  text-align: center;
-  color: #64748b;
+  overflow: hidden;
 }
 
 .controls {

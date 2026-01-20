@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react';
+import * as Blockly from 'blockly';
+import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 
 const GRID_SIZE = 10;
 const TILE_SIZE = 32;
 
 const App = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const blocklyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,6 +36,28 @@ const App = () => {
     ctx.fill();
   }, []);
 
+  useEffect(() => {
+    const blocklyDiv = blocklyRef.current;
+    if (!blocklyDiv) {
+      return;
+    }
+
+    registerBlocks();
+
+    const workspace = Blockly.inject(blocklyDiv, {
+      toolbox: toolboxDefinition,
+      grid: {
+        spacing: 20,
+        length: 3,
+        colour: '#e2e8f0',
+        snap: true,
+      },
+      renderer: 'thrasos',
+    });
+
+    return () => workspace.dispose();
+  }, []);
+
   return (
     <div className="app">
       <header className="app__header">
@@ -50,7 +75,7 @@ const App = () => {
         </section>
         <section className="panel">
           <h2>Block Editor</h2>
-          <div className="placeholder">Blockly workspace placeholder</div>
+          <div className="blockly-host" ref={blocklyRef} />
         </section>
         <section className="panel">
           <h2>Controls</h2>
