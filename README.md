@@ -185,6 +185,29 @@ Keep it simple: one button toggles one door for MVP.
 ## Initial Codex task (start here)
 Goal: deliver a minimal vertical slice where a user can place a few blocks and see a robot move in a tiny grid.
 
+## Codex build plan (checklist)
+Use this step-by-step plan when building the project. Mark each item as complete by changing `[ ]` to `[x]`.
+
+1. [ ] **Scaffold the frontend app**
+   - Create the `web/` React/TypeScript app with a running dev server.
+   - Add a basic layout for the canvas, block editor, and controls.
+2. [ ] **Implement the deterministic simulation engine**
+   - Build the grid world, robot state, and tick loop in `src/engine/`.
+   - Support movement, turning, waiting, walls, goals, and hazards.
+3. [ ] **Integrate Blockly and compile blocks**
+   - Define the MVP block set in `src/blocks/`.
+   - Compile blocks to a safe AST/bytecode and execute via a VM.
+4. [ ] **Wire UI controls to the simulation**
+   - Run/Pause/Step/Reset controls drive the VM and simulation state.
+   - Render the grid and robot in the canvas.
+5. [ ] **Create the initial level pack**
+   - Add 10–15 JSON levels in `src/levels/builtin/`.
+   - Include buttons/doors and 1–2 multi-robot levels near the end.
+6. [ ] **Polish for playability**
+   - Add replay/step-through UX, visual highlights, and basic sprites/icons.
+7. [ ] **(Optional) Add backend services**
+   - Implement Spring Boot + Postgres only if progress sync or sharing is required.
+
 ### Task 1 — Create frontend scaffold + minimal engine + Blockly integration
 **Acceptance criteria**
 1. `pnpm dev` (or `npm run dev`) starts a web app.
