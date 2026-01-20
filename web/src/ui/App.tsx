@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
@@ -6,7 +6,18 @@ import { createVm, stepVm, type VmState } from '../blocks/vm';
 import { createRobotState, type RobotAction } from '../engine/robot';
 import { createSimulation, stepSimulation, type SimulationState } from '../engine/sim';
 import { TileType, createWorld } from '../engine/world';
-import demoLevel from '../levels/builtin/demo.json';
+import level01 from '../levels/builtin/level-01.json';
+import level02 from '../levels/builtin/level-02.json';
+import level03 from '../levels/builtin/level-03.json';
+import level04 from '../levels/builtin/level-04.json';
+import level05 from '../levels/builtin/level-05.json';
+import level06 from '../levels/builtin/level-06.json';
+import level07 from '../levels/builtin/level-07.json';
+import level08 from '../levels/builtin/level-08.json';
+import level09 from '../levels/builtin/level-09.json';
+import level10 from '../levels/builtin/level-10.json';
+import level11 from '../levels/builtin/level-11.json';
+import level12 from '../levels/builtin/level-12.json';
 
 const TILE_SIZE = 32;
 const actionLabels: Record<RobotAction, string> = {
@@ -15,6 +26,30 @@ const actionLabels: Record<RobotAction, string> = {
   TURN_RIGHT: 'Turn Right',
   WAIT: 'Wait',
 };
+
+interface LevelDefinition {
+  id: string;
+  name: string;
+  difficulty: number;
+  grid: number[][];
+  start: { x: number; y: number; dir: number };
+  goal: { x: number; y: number };
+}
+
+const levels: LevelDefinition[] = [
+  level01,
+  level02,
+  level03,
+  level04,
+  level05,
+  level06,
+  level07,
+  level08,
+  level09,
+  level10,
+  level11,
+  level12,
+];
 
 const drawGoalIcon = (
   ctx: CanvasRenderingContext2D,
@@ -155,22 +190,16 @@ const App = () => {
   const blocklyRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
-  const world = useMemo(() => createWorld(demoLevel.grid), []);
-  const initialRobot = useMemo(
-    () =>
-      createRobotState(
-        demoLevel.start.x,
-        demoLevel.start.y,
-        demoLevel.start.dir as 0 | 1 | 2 | 3,
-      ),
-    [],
-  );
-  const initialSimulation = useMemo(
-    () => createSimulation(world, initialRobot),
-    [world, initialRobot],
-  );
+  const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
+    const world = createWorld(level.grid);
+    const robot = createRobotState(level.start.x, level.start.y, level.start.dir as 0 | 1 | 2 | 3);
+    return createSimulation(world, robot);
+  }, []);
 
-  const [simulation, setSimulation] = useState<SimulationState>(initialSimulation);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [simulation, setSimulation] = useState<SimulationState>(() =>
+    createSimulationForLevel(levels[0]),
+  );
   const [vmState, setVmState] = useState<VmState | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
@@ -185,6 +214,28 @@ const App = () => {
   const traceRef = useRef<RobotAction[]>([]);
   const replayIndexRef = useRef(0);
   const lastRunRef = useRef<RobotAction[]>([]);
+
+  const loadLevel = useCallback(
+    (nextIndex: number) => {
+      const nextLevel = levels[nextIndex];
+      if (!nextLevel) {
+        return;
+      }
+
+      setLevelIndex(nextIndex);
+      setIsRunning(false);
+      setIsReplaying(false);
+      setSimulation(createSimulationForLevel(nextLevel));
+      setVmState(null);
+      setReplayIndex(0);
+      setLastRunActions([]);
+      setActionTrace([]);
+      setCurrentAction(null);
+      traceRef.current = [];
+      replayIndexRef.current = 0;
+    },
+    [createSimulationForLevel],
+  );
 
   useEffect(() => {
     simulationRef.current = simulation;
@@ -287,7 +338,7 @@ const App = () => {
   const handleReset = () => {
     setIsRunning(false);
     setIsReplaying(false);
-    setSimulation(initialSimulation);
+    setSimulation(createSimulationForLevel(levels[levelIndex]));
     setVmState(null);
     setActionTrace([]);
     setCurrentAction(null);
@@ -300,7 +351,7 @@ const App = () => {
     }
     setIsRunning(false);
     setIsReplaying(true);
-    setSimulation(initialSimulation);
+    setSimulation(createSimulationForLevel(levels[levelIndex]));
     setVmState(null);
     setReplayIndex(0);
     replayIndexRef.current = 0;
@@ -317,6 +368,23 @@ const App = () => {
     const highlightedId = vmState?.currentNode?.blockId ?? null;
     workspace.highlightBlock(highlightedId);
   }, [vmState]);
+
+  useEffect(() => {
+    if (simulation.status !== 'won' || isReplaying) {
+      return undefined;
+    }
+
+    const nextIndex = levelIndex + 1;
+    if (nextIndex >= levels.length) {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      loadLevel(nextIndex);
+    }, 800);
+
+    return () => window.clearTimeout(timeout);
+  }, [simulation.status, levelIndex, isReplaying, loadLevel]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -448,12 +516,17 @@ const App = () => {
 
   const isBusy = isRunning || isReplaying;
   const hasReplay = lastRunActions.length > 0;
+  const currentLevel = levels[levelIndex];
+  const hasNextLevel = levelIndex + 1 < levels.length;
 
   return (
     <div className="app">
       <header className="app__header">
         <h1>LemBots</h1>
-        <p>Scratch-like blocks + robot simulation (scaffold)</p>
+        <p>
+          Scratch-like blocks + robot simulation (scaffold) — Level {levelIndex + 1}:{' '}
+          {currentLevel.name}
+        </p>
       </header>
       <main className="app__main">
         <section className="panel">
@@ -507,6 +580,11 @@ const App = () => {
               Status: {simulation.status}
               {simulation.status === 'running' && isRunning ? ' (running)' : ''}
               {simulation.status === 'running' && isReplaying ? ' (replay)' : ''}
+              {simulation.status === 'won'
+                ? hasNextLevel
+                  ? ' (advancing...)'
+                  : ' (all levels complete!)'
+                : ''}
             </p>
             <p>Steps: {simulation.stepCount}</p>
             <p>VM: {vmState?.status ?? 'idle'}</p>
