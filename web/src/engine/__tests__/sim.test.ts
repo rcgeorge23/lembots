@@ -61,8 +61,17 @@ describe('simulation rules', () => {
   it('ends the simulation when reaching the goal', () => {
     const world = buildWorld();
     const robot = createRobotState(1, 1, 1);
-    const sim = createSimulation(world, robot);
-    const next = stepSimulation(sim, 'MOVE_FORWARD');
+    const sim = createSimulation({
+      world,
+      spawner: {
+        x: robot.x,
+        y: robot.y,
+        dir: robot.direction,
+        count: 1,
+        intervalTicks: 0,
+      },
+    });
+    const next = stepSimulation(sim, ['MOVE_FORWARD']);
 
     expect(next.status).toBe('won');
   });
