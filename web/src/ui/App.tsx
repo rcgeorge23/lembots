@@ -600,7 +600,11 @@ const App = () => {
             <h3>Levels</h3>
             <div className="levels__grid">
               {levels.map((level, index) => {
-                const isUnlocked = completedLevelSet.has(level.id);
+                const previousLevel = levels[index - 1];
+                const isUnlocked =
+                  index === 0 ||
+                  completedLevelSet.has(level.id) ||
+                  (previousLevel ? completedLevelSet.has(previousLevel.id) : false);
                 const isCurrent = index === levelIndex;
                 return (
                   <button
@@ -617,8 +621,8 @@ const App = () => {
             </div>
             <p className="levels__hint">
               {completedLevels.length === 0
-                ? 'Complete a level to unlock its button.'
-                : 'Unlocked levels stay available after reloads.'}
+                ? 'Complete level 1 to unlock level 2.'
+                : 'Complete a level to unlock the next one.'}
             </p>
           </div>
           <div className="controls">
