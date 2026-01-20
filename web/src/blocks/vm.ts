@@ -9,6 +9,7 @@ export interface VmContext {
   world: World;
   robot: RobotState;
   exits: { x: number; y: number }[];
+  globalSignal: boolean;
 }
 
 interface SequenceFrame {
@@ -55,7 +56,7 @@ export const createVm = (program: ProgramNode, maxSteps = 200): VmState => ({
 });
 
 const evaluateCondition = (condition: ConditionType, context: VmContext): boolean => {
-  const { world, robot, exits } = context;
+  const { world, robot, exits, globalSignal } = context;
   const isOnExit =
     exits.length > 0
       ? exits.some((exit) => exit.x === robot.x && exit.y === robot.y)
@@ -92,6 +93,8 @@ const evaluateCondition = (condition: ConditionType, context: VmContext): boolea
       const left = getForwardPosition(robot, leftDirection);
       return isWall(world, left.x, left.y);
     }
+    case 'GLOBAL_SIGNAL_ON':
+      return globalSignal;
     default:
       return false;
   }

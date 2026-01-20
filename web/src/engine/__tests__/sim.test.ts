@@ -202,4 +202,18 @@ describe('simulation rules', () => {
 
     expect(next.robots[1].x).toBe(2);
   });
+
+  it('updates the global signal based on robot actions', () => {
+    const world = buildOpenWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 0, intervalTicks: 0 },
+    });
+    const withRobot = { ...sim, robots: [{ ...createRobotState(1, 1, 1, 'robot-1') }] };
+    const signaledOn = stepSimulation(withRobot, ['SIGNAL_ON']);
+    const signaledOff = stepSimulation(signaledOn, ['SIGNAL_OFF']);
+
+    expect(signaledOn.globalSignal).toBe(true);
+    expect(signaledOff.globalSignal).toBe(false);
+  });
 });

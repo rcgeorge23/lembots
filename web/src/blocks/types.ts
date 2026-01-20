@@ -7,7 +7,8 @@ export type ConditionType =
   | 'HAZARD_RIGHT'
   | 'WALL_RIGHT'
   | 'HAZARD_LEFT'
-  | 'WALL_LEFT';
+  | 'WALL_LEFT'
+  | 'GLOBAL_SIGNAL_ON';
 
 export interface ActionNode {
   type: 'action';

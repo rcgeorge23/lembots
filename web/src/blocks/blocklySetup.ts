@@ -29,6 +29,20 @@ const ACTION_BLOCKS = [
     nextStatement: null,
     colour: 210,
   },
+  {
+    type: 'lembot_signal_on',
+    message0: 'set signal on',
+    previousStatement: null,
+    nextStatement: null,
+    colour: 210,
+  },
+  {
+    type: 'lembot_signal_off',
+    message0: 'set signal off',
+    previousStatement: null,
+    nextStatement: null,
+    colour: 210,
+  },
 ] as const;
 
 const CONTROL_BLOCKS = [
@@ -146,6 +160,12 @@ const CONDITION_BLOCKS = [
   {
     type: 'lembot_wall_left',
     message0: 'wall to the left?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_signal_active',
+    message0: 'signal on?',
     output: 'Boolean',
     colour: 30,
   },

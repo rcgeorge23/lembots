@@ -30,6 +30,7 @@ export interface SimulationState {
   spawnedCount: number;
   nextSpawnTick: number | null;
   doorUnlocked: boolean;
+  globalSignal: boolean;
 }
 
 export interface SimulationConfig {
@@ -109,6 +110,7 @@ export const createSimulation = ({
     spawnedCount,
     nextSpawnTick,
     doorUnlocked,
+    globalSignal: false,
   };
 };
 
@@ -170,6 +172,7 @@ export const stepSimulation = (
     return state;
   }
 
+  let globalSignal = state.globalSignal;
   const occupied = buildOccupiedPositions(state.robots);
   const spawned = spawnNextRobot(state, occupied);
   const nextOccupied = buildOccupiedPositions(spawned.robots);
@@ -184,6 +187,11 @@ export const stepSimulation = (
     }
 
     let nextRobot = robot;
+    if (action === 'SIGNAL_ON') {
+      globalSignal = true;
+    } else if (action === 'SIGNAL_OFF') {
+      globalSignal = false;
+    }
     const wasBlocking = isBlockingRobot(robot);
     if (wasBlocking) {
       nextOccupied.delete(positionKey(robot.x, robot.y));
@@ -224,6 +232,7 @@ export const stepSimulation = (
       status: 'won',
       stepCount,
       doorUnlocked,
+      globalSignal,
     };
   }
 
@@ -236,6 +245,7 @@ export const stepSimulation = (
       status: 'lost',
       stepCount,
       doorUnlocked,
+      globalSignal,
     };
   }
 
@@ -248,6 +258,7 @@ export const stepSimulation = (
       status: 'lost',
       stepCount,
       doorUnlocked,
+      globalSignal,
     };
   }
 
@@ -258,5 +269,6 @@ export const stepSimulation = (
     nextSpawnTick: spawned.nextSpawnTick,
     stepCount,
     doorUnlocked,
+    globalSignal,
   };
 };
