@@ -436,6 +436,7 @@ const App = () => {
     registerBlocks();
 
     const blocklyTheme = Blockly.Theme.defineTheme('lembots-dark', {
+      name: 'lembots-dark',
       base: Blockly.Themes.Classic,
       componentStyles: {
         workspaceBackgroundColour: '#0f172a',
