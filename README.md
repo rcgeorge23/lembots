@@ -17,6 +17,11 @@ This document is a high-level project overview and a starter task list for Codex
 2. Start the dev server: `npm run dev`.
 3. Open the URL printed in the terminal.
 
+## Deployment (Railway)
+- Deploy from the repo root so Railway detects the root `package.json`.
+- Build command: `npm run build`
+- Start command: `npm run start` (serves the Vite preview server on `0.0.0.0:$PORT`).
+
 ---
 
 ## Core gameplay loop
