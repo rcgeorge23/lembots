@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
@@ -20,6 +20,7 @@ import level11 from '../levels/builtin/level-11.json';
 import level12 from '../levels/builtin/level-12.json';
 
 const TILE_SIZE = 32;
+const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
 const actionLabels: Record<RobotAction, string> = {
   MOVE_FORWARD: 'Move Forward',
   TURN_LEFT: 'Turn Left',
@@ -50,6 +51,28 @@ const levels: LevelDefinition[] = [
   level11,
   level12,
 ];
+
+const loadCompletedLevels = (): string[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const stored = window.localStorage.getItem(COMPLETED_LEVELS_STORAGE_KEY);
+  if (!stored) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry): entry is string => typeof entry === 'string');
+    }
+  } catch (error) {
+    console.warn('Unable to read completed levels from local storage.', error);
+  }
+
+  return [];
+};
 
 const drawGoalIcon = (
   ctx: CanvasRenderingContext2D,
@@ -208,6 +231,9 @@ const App = () => {
   const [actionTrace, setActionTrace] = useState<RobotAction[]>([]);
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
   const [speedMs, setSpeedMs] = useState(500);
+  const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
+
+  const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
   const simulationRef = useRef(simulation);
   const vmRef = useRef(vmState);
@@ -256,6 +282,33 @@ const App = () => {
   useEffect(() => {
     lastRunRef.current = lastRunActions;
   }, [lastRunActions]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(
+      COMPLETED_LEVELS_STORAGE_KEY,
+      JSON.stringify(completedLevels),
+    );
+  }, [completedLevels]);
+
+  useEffect(() => {
+    if (simulation.status !== 'won' || isReplaying) {
+      return;
+    }
+
+    const currentLevelId = levels[levelIndex]?.id;
+    if (!currentLevelId) {
+      return;
+    }
+
+    if (!completedLevelSet.has(currentLevelId)) {
+      setCompletedLevels((prev) =>
+        prev.includes(currentLevelId) ? prev : [...prev, currentLevelId],
+      );
+    }
+  }, [completedLevelSet, isReplaying, levelIndex, simulation.status]);
 
   const compileProgram = (): VmState | null => {
     const workspace = workspaceRef.current;
@@ -543,6 +596,31 @@ const App = () => {
         </section>
         <section className="panel">
           <h2>Controls</h2>
+          <div className="levels">
+            <h3>Levels</h3>
+            <div className="levels__grid">
+              {levels.map((level, index) => {
+                const isUnlocked = completedLevelSet.has(level.id);
+                const isCurrent = index === levelIndex;
+                return (
+                  <button
+                    key={level.id}
+                    type="button"
+                    className={`levels__button${isCurrent ? ' is-current' : ''}`}
+                    onClick={() => loadLevel(index)}
+                    disabled={!isUnlocked || isBusy}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="levels__hint">
+              {completedLevels.length === 0
+                ? 'Complete a level to unlock its button.'
+                : 'Unlocked levels stay available after reloads.'}
+            </p>
+          </div>
           <div className="controls">
             <button type="button" onClick={handleRun} disabled={isBusy}>
               Run

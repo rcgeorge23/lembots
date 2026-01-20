@@ -85,6 +85,58 @@ body {
   cursor: not-allowed;
 }
 
+.levels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.levels h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.levels__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.levels__button {
+  border: 1px solid #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 8px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.levels__button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+}
+
+.levels__button.is-current {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.levels__button:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  border-color: #cbd5f5;
+  cursor: not-allowed;
+}
+
+.levels__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 .controls__speed {
   display: flex;
   flex-direction: column;
