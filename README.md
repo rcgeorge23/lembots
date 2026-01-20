@@ -216,7 +216,7 @@ Each task should be completed in a deployable state and include appropriate test
 5. [x] **Create the initial level pack**
    - Add 10–15 JSON levels in `src/levels/builtin/`.
    - Include buttons/doors and 1–2 multi-robot levels near the end.
-6. [ ] **Polish for playability**
+6. [x] **Polish for playability**
    - Add replay/step-through UX, visual highlights, and basic sprites/icons.
 7. [ ] **(Optional) Add backend services**
    - Implement Spring Boot + Postgres only if progress sync or sharing is required.
