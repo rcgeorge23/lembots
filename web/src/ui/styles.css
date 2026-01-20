@@ -71,3 +71,21 @@ body {
 .controls button:nth-child(3) {
   background: #475569;
 }
+
+.controls button:nth-child(4) {
+  background: #1e293b;
+}
+
+.controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.controls__status {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.controls__status p {
+  margin: 4px 0;
+}
