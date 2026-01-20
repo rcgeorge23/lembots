@@ -1,6 +1,7 @@
 import type { RobotAction } from '../engine/robot';
 import type { SimulationState } from '../engine/sim';
-import { TileType, type World } from '../engine/world';
+import { isDoorOpen } from '../engine/sim';
+import { isDoor, isPressurePlate, TileType, type World } from '../engine/world';
 import type { RenderAssets, RenderContext, Renderer, SpriteFrame } from './Renderer';
 
 const tileMapping: Record<TileType, string> = {
@@ -8,6 +9,8 @@ const tileMapping: Record<TileType, string> = {
   [TileType.Wall]: 'wall',
   [TileType.Goal]: 'goal',
   [TileType.Hazard]: 'hazard',
+  [TileType.PressurePlate]: 'floor',
+  [TileType.Door]: 'floor',
 };
 
 type RobotAnim = 'idle' | 'walk' | 'turn' | 'bump' | 'win' | 'fail';
@@ -85,6 +88,23 @@ export class CanvasRenderer implements Renderer {
         const sprite = tilesAtlas.tiles[tileKey];
         if (sprite) {
           this.drawTile(tilesImage, sprite, col, row, scale);
+        }
+      }
+    }
+
+    const pressedPlates = new Set(
+      simulation.robots
+        .filter((robot) => robot.alive && !robot.reachedGoal)
+        .filter((robot) => isPressurePlate(world, robot.x, robot.y))
+        .map((robot) => `${robot.x},${robot.y}`),
+    );
+    const doorOpen = isDoorOpen(world, simulation.robots, simulation.doorUnlocked);
+    for (let row = 0; row < world.height; row += 1) {
+      for (let col = 0; col < world.width; col += 1) {
+        if (isPressurePlate(world, col, row)) {
+          this.drawPressurePlate(col, row, pressedPlates.has(`${col},${row}`));
+        } else if (isDoor(world, col, row)) {
+          this.drawDoor(col, row, doorOpen);
         }
       }
     }
@@ -179,6 +199,66 @@ export class CanvasRenderer implements Renderer {
       sprite.w * scale,
       sprite.h * scale,
     );
+  }
+
+  private drawPressurePlate(col: number, row: number, pressed: boolean) {
+    if (!this.ctx) {
+      return;
+    }
+    const padding = this.tileSize * 0.18;
+    const size = this.tileSize - padding * 2;
+    this.ctx.save();
+    this.ctx.fillStyle = pressed ? '#fbbf24' : '#f59e0b';
+    this.ctx.strokeStyle = '#92400e';
+    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.08);
+    this.ctx.fillRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      size,
+      size,
+    );
+    this.ctx.strokeRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      size,
+      size,
+    );
+    this.ctx.restore();
+  }
+
+  private drawDoor(col: number, row: number, open: boolean) {
+    if (!this.ctx) {
+      return;
+    }
+    const padding = this.tileSize * 0.12;
+    this.ctx.save();
+    this.ctx.fillStyle = open ? '#60a5fa' : '#1e293b';
+    this.ctx.strokeStyle = open ? '#1d4ed8' : '#0f172a';
+    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.08);
+    this.ctx.fillRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
+    this.ctx.strokeRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
+    if (open) {
+      this.ctx.strokeStyle = '#e0f2fe';
+      this.ctx.lineWidth = Math.max(1, this.tileSize * 0.06);
+      this.ctx.beginPath();
+      this.ctx.moveTo(col * this.tileSize + padding, row * this.tileSize + padding);
+      this.ctx.lineTo(
+        col * this.tileSize + this.tileSize - padding,
+        row * this.tileSize + this.tileSize - padding,
+      );
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
   }
 
   private drawRobot(

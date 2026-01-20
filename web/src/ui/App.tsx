@@ -6,6 +6,7 @@ import { createVm, stepVm, type VmState } from '../blocks/vm';
 import type { Direction, RobotAction } from '../engine/robot';
 import {
   createSimulation,
+  isDoorOpen,
   stepSimulation,
   type SimulationState,
   type Spawner,
@@ -52,8 +53,12 @@ const tileKeyByType: Record<TileType, string> = {
   [TileType.Wall]: 'wall',
   [TileType.Goal]: 'goal',
   [TileType.Hazard]: 'hazard',
+  [TileType.PressurePlate]: 'floor',
+  [TileType.Door]: 'floor',
 };
 const thumbnailTileSize = 12;
+const thumbnailDoorFill = '#1e293b';
+const thumbnailPlateFill = '#f59e0b';
 
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
@@ -71,6 +76,48 @@ const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction =>
     default:
       return 1;
   }
+};
+
+const drawThumbnailPlate = (
+  ctx: CanvasRenderingContext2D,
+  col: number,
+  row: number,
+  tileSize: number,
+) => {
+  const padding = tileSize * 0.2;
+  ctx.save();
+  ctx.fillStyle = thumbnailPlateFill;
+  ctx.strokeStyle = '#92400e';
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
+  ctx.strokeRect(
+    col * tileSize + padding,
+    row * tileSize + padding,
+    tileSize - padding * 2,
+    tileSize - padding * 2,
+  );
+  ctx.restore();
+};
+
+const drawThumbnailDoor = (
+  ctx: CanvasRenderingContext2D,
+  col: number,
+  row: number,
+  tileSize: number,
+) => {
+  const padding = tileSize * 0.12;
+  ctx.save();
+  ctx.fillStyle = thumbnailDoorFill;
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
+  ctx.strokeRect(
+    col * tileSize + padding,
+    row * tileSize + padding,
+    tileSize - padding * 2,
+    tileSize - padding * 2,
+  );
+  ctx.restore();
 };
 
 interface LevelDefinition {
@@ -471,6 +518,16 @@ const App = () => {
           );
         }
       }
+      for (let row = 0; row < world.height; row += 1) {
+        for (let col = 0; col < world.width; col += 1) {
+          const tile = world.grid[row][col];
+          if (tile === TileType.PressurePlate) {
+            drawThumbnailPlate(ctx, col, row, thumbnailTileSize);
+          } else if (tile === TileType.Door) {
+            drawThumbnailDoor(ctx, col, row, thumbnailTileSize);
+          }
+        }
+      }
       thumbnails[level.id] = canvas.toDataURL('image/png');
     });
     setLevelThumbnails(thumbnails);
@@ -665,6 +722,12 @@ const App = () => {
     (robot) => robot.alive && !robot.reachedGoal,
   ).length;
   const remainingCount = Math.max(simulation.spawner.count - simulation.spawnedCount, 0);
+  const hasDoors = simulation.world.grid.some((row) => row.some((tile) => tile === TileType.Door));
+  const doorStatus = hasDoors
+    ? isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked)
+      ? 'Open'
+      : 'Closed'
+    : '—';
   const quotaLabel = `${savedCount} / ${simulation.requiredSaved}`;
   const selectedRobotStatus = selectedRobot
     ? selectedRobot.reachedGoal
@@ -805,6 +868,10 @@ const App = () => {
                 <p className="status-card__value">
                   {currentAction ? actionLabels[currentAction] : '—'}
                 </p>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">Doors</p>
+                <p className="status-card__value">{doorStatus}</p>
               </div>
             </div>
             <div className="console__robots">

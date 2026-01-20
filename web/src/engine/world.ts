@@ -3,6 +3,8 @@ export enum TileType {
   Wall = 1,
   Goal = 2,
   Hazard = 3,
+  PressurePlate = 4,
+  Door = 5,
 }
 
 export interface World {
@@ -39,3 +41,9 @@ export const isGoal = (world: World, x: number, y: number): boolean =>
 
 export const isHazard = (world: World, x: number, y: number): boolean =>
   getTile(world, x, y) === TileType.Hazard;
+
+export const isPressurePlate = (world: World, x: number, y: number): boolean =>
+  getTile(world, x, y) === TileType.PressurePlate;
+
+export const isDoor = (world: World, x: number, y: number): boolean =>
+  getTile(world, x, y) === TileType.Door;

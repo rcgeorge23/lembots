@@ -20,6 +20,14 @@ const buildOpenWorld = () =>
     [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
   ]);
 
+const buildDoorWorld = () =>
+  createWorld([
+    [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
+    [TileType.Wall, TileType.Empty, TileType.Door, TileType.Empty, TileType.Wall],
+    [TileType.Wall, TileType.PressurePlate, TileType.Empty, TileType.Empty, TileType.Wall],
+    [TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall, TileType.Wall],
+  ]);
+
 describe('simulation rules', () => {
   it('moves forward when the path is clear', () => {
     const world = buildWorld();
@@ -156,5 +164,42 @@ describe('simulation rules', () => {
     expect(next.robots.length).toBe(1);
     expect(next.spawnedCount).toBe(1);
     expect(next.nextSpawnTick).toBe(1);
+  });
+
+  it('keeps doors closed when no plates are pressed', () => {
+    const world = buildDoorWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 0, intervalTicks: 0 },
+    });
+    const next = stepSimulation(
+      {
+        ...sim,
+        robots: [{ ...createRobotState(1, 1, 1, 'robot-1') }],
+      },
+      ['MOVE_FORWARD'],
+    );
+
+    expect(next.robots[0].x).toBe(1);
+  });
+
+  it('opens doors after a plate has been pressed', () => {
+    const world = buildDoorWorld();
+    const sim = createSimulation({
+      world,
+      spawner: { x: 1, y: 1, dir: 1, count: 0, intervalTicks: 0 },
+    });
+    const next = stepSimulation(
+      {
+        ...sim,
+        robots: [
+          { ...createRobotState(1, 2, 1, 'robot-1') },
+          { ...createRobotState(1, 1, 1, 'robot-2') },
+        ],
+      },
+      ['WAIT', 'MOVE_FORWARD'],
+    );
+
+    expect(next.robots[1].x).toBe(2);
   });
 });

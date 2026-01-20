@@ -31,11 +31,13 @@ export const applyAction = (
   world: World,
   robot: RobotState,
   action: RobotAction,
+  options?: { isBlocked?: (x: number, y: number) => boolean },
 ): RobotState => {
   if (!robot.alive || robot.reachedGoal) {
     return robot;
   }
 
+  const isBlocked = options?.isBlocked ?? ((x: number, y: number) => isWall(world, x, y));
   let nextState = { ...robot };
   let landedOnHazard = false;
 
@@ -45,7 +47,7 @@ export const applyAction = (
     nextState = { ...nextState, direction: turnRight(nextState.direction) };
   } else if (action === 'MOVE_FORWARD') {
     const forward = getForwardPosition(nextState, nextState.direction);
-    if (!isWall(world, forward.x, forward.y)) {
+    if (!isBlocked(forward.x, forward.y)) {
       nextState = { ...nextState, x: forward.x, y: forward.y };
       landedOnHazard = isHazard(world, forward.x, forward.y);
     }
