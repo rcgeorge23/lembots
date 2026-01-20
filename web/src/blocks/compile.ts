@@ -11,8 +11,6 @@ const compileCondition = (block: Blockly.Block | null): ConditionType => {
       return 'PATH_AHEAD_CLEAR';
     case 'lembot_on_goal':
       return 'ON_GOAL';
-    case 'lembot_on_hazard':
-      return 'ON_HAZARD';
     case 'lembot_hazard_right':
       return 'HAZARD_RIGHT';
     case 'lembot_wall_right':

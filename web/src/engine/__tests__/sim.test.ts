@@ -42,12 +42,20 @@ describe('simulation rules', () => {
     expect(right.direction).toBe(1);
   });
 
-  it('marks the robot as lost on hazards', () => {
+  it('marks the robot as lost when it lands on a hazard', () => {
     const world = buildWorld();
     const robot = createRobotState(1, 1, 2);
     const next = applyAction(world, robot, 'MOVE_FORWARD');
 
     expect(next.alive).toBe(false);
+  });
+
+  it('does not lose the robot just for turning on a hazard', () => {
+    const world = buildWorld();
+    const robot = createRobotState(1, 2, 0);
+    const next = applyAction(world, robot, 'TURN_LEFT');
+
+    expect(next.alive).toBe(true);
   });
 
   it('ends the simulation when reaching the goal', () => {

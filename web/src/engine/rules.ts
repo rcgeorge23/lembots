@@ -37,6 +37,7 @@ export const applyAction = (
   }
 
   let nextState = { ...robot };
+  let landedOnHazard = false;
 
   if (action === 'TURN_LEFT') {
     nextState = { ...nextState, direction: turnLeft(nextState.direction) };
@@ -46,10 +47,11 @@ export const applyAction = (
     const forward = getForwardPosition(nextState, nextState.direction);
     if (!isWall(world, forward.x, forward.y)) {
       nextState = { ...nextState, x: forward.x, y: forward.y };
+      landedOnHazard = isHazard(world, forward.x, forward.y);
     }
   }
 
-  if (isHazard(world, nextState.x, nextState.y)) {
+  if (landedOnHazard) {
     nextState = { ...nextState, alive: false };
   }
 
