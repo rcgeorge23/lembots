@@ -3,8 +3,13 @@ import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
 import { createVm, stepVm, type VmState } from '../blocks/vm';
-import { createRobotState, type RobotAction } from '../engine/robot';
-import { createSimulation, stepSimulation, type SimulationState } from '../engine/sim';
+import type { Direction, RobotAction } from '../engine/robot';
+import {
+  createSimulation,
+  stepSimulation,
+  type SimulationState,
+  type Spawner,
+} from '../engine/sim';
 import { TileType, createWorld } from '../engine/world';
 import { CanvasRenderer } from '../render/CanvasRenderer';
 import { loadRenderAssets } from '../render/assets';
@@ -44,13 +49,35 @@ const tileKeyByType: Record<TileType, string> = {
 };
 const thumbnailTileSize = 12;
 
+const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
+  if (typeof direction === 'number') {
+    return direction as Direction;
+  }
+  switch (direction) {
+    case 'N':
+      return 0;
+    case 'E':
+      return 1;
+    case 'S':
+      return 2;
+    case 'W':
+      return 3;
+    default:
+      return 1;
+  }
+};
+
 interface LevelDefinition {
   id: string;
   name: string;
   difficulty: number;
   grid: number[][];
-  start: { x: number; y: number; dir: number };
-  goal: { x: number; y: number };
+  spawner?: { x: number; y: number; dir: number | 'N' | 'E' | 'S' | 'W'; count: number; intervalTicks: number };
+  exits?: { x: number; y: number }[];
+  requiredSaved?: number;
+  maxTicks?: number;
+  start?: { x: number; y: number; dir: number };
+  goal?: { x: number; y: number };
 }
 
 const levels: LevelDefinition[] = [
@@ -99,8 +126,26 @@ const App = () => {
 
   const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
     const world = createWorld(level.grid);
-    const robot = createRobotState(level.start.x, level.start.y, level.start.dir as 0 | 1 | 2 | 3);
-    return createSimulation(world, robot);
+    const fallbackStart = level.start ?? { x: 1, y: 1, dir: 1 };
+    const spawner: Spawner =
+      level.spawner ?? {
+        x: fallbackStart.x,
+        y: fallbackStart.y,
+        dir: parseDirection(fallbackStart.dir),
+        count: 1,
+        intervalTicks: 0,
+      };
+    const exits = level.exits ?? (level.goal ? [level.goal] : []);
+    return createSimulation({
+      world,
+      spawner: {
+        ...spawner,
+        dir: parseDirection(spawner.dir),
+      },
+      exits,
+      maxSteps: level.maxTicks ?? 200,
+      requiredSaved: level.requiredSaved ?? 1,
+    });
   }, []);
 
   const [levelIndex, setLevelIndex] = useState(0);
@@ -229,14 +274,20 @@ const App = () => {
       return;
     }
 
+    const primaryRobot = currentSimulation.robots[0];
+    if (!primaryRobot) {
+      setIsRunning(false);
+      return;
+    }
+
     const vmResult = stepVm(currentVm, {
       world: currentSimulation.world,
-      robot: currentSimulation.robot,
+      robot: primaryRobot,
     });
 
     let nextSimulation = currentSimulation;
     if (vmResult.action) {
-      nextSimulation = stepSimulation(currentSimulation, vmResult.action);
+      nextSimulation = stepSimulation(currentSimulation, [vmResult.action]);
     }
 
     if (vmResult.state.status === 'step_limit') {
@@ -260,7 +311,7 @@ const App = () => {
         nextSimulation.stepCount >= nextSimulation.maxSteps;
       if (reachedLimit) {
         setFailReason('step_limit');
-      } else if (!nextSimulation.robot.alive) {
+      } else if (nextSimulation.robots.some((robot) => !robot.alive)) {
         setFailReason('hazard');
       } else {
         setFailReason('unknown');
@@ -500,7 +551,7 @@ const App = () => {
       }
 
       const currentSimulation = simulationRef.current;
-      const nextSimulation = stepSimulation(currentSimulation, action);
+      const nextSimulation = stepSimulation(currentSimulation, [action]);
       setSimulation(nextSimulation);
 
       const updatedTrace = [...traceRef.current, action];

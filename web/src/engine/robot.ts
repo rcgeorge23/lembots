@@ -7,6 +7,7 @@ export type RobotAction =
   | 'WAIT';
 
 export interface RobotState {
+  id: string;
   x: number;
   y: number;
   direction: Direction;
@@ -18,7 +19,9 @@ export const createRobotState = (
   x: number,
   y: number,
   direction: Direction,
+  id = 'robot-1',
 ): RobotState => ({
+  id,
   x,
   y,
   direction,

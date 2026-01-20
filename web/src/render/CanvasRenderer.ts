@@ -93,17 +93,28 @@ export class CanvasRenderer implements Renderer {
       }
     }
 
-    const { robot } = simulation;
-    const centerX = (robot.x + 0.5) * this.tileSize;
-    const centerY = (robot.y + 0.5) * this.tileSize;
-    this.drawRobot(ctx, assets, centerX, centerY, robot.direction, simulation, context, dt);
-    if (context?.lastAction) {
-      this.drawRobotIndicator(ctx, centerX, centerY, actionIndicatorLabels[context.lastAction]);
-    }
+    const robot = simulation.robots[0];
+    if (robot) {
+      const centerX = (robot.x + 0.5) * this.tileSize;
+      const centerY = (robot.y + 0.5) * this.tileSize;
+      this.drawRobot(ctx, assets, centerX, centerY, robot.direction, simulation, robot, context, dt);
+      if (context?.lastAction) {
+        this.drawRobotIndicator(
+          ctx,
+          centerX,
+          centerY,
+          actionIndicatorLabels[context.lastAction],
+        );
+      }
 
-    this.lastRobotX = robot.x;
-    this.lastRobotY = robot.y;
-    this.lastRobotDirection = robot.direction;
+      this.lastRobotX = robot.x;
+      this.lastRobotY = robot.y;
+      this.lastRobotDirection = robot.direction;
+    } else {
+      this.lastRobotX = null;
+      this.lastRobotY = null;
+      this.lastRobotDirection = null;
+    }
   }
 
   private drawTile(
@@ -136,10 +147,11 @@ export class CanvasRenderer implements Renderer {
     centerY: number,
     direction: number,
     simulation: SimulationState,
+    robot: SimulationState['robots'][number],
     context: RenderContext | undefined,
     dt: number,
   ) {
-    const nextAnim = this.resolveRobotAnimation(simulation, context);
+    const nextAnim = this.resolveRobotAnimation(simulation, robot, context);
     if (nextAnim !== this.robotAnim) {
       this.robotAnim = nextAnim;
       this.robotFrameIndex = 0;
@@ -183,6 +195,7 @@ export class CanvasRenderer implements Renderer {
 
   private resolveRobotAnimation(
     simulation: SimulationState,
+    robot: SimulationState['robots'][number],
     context: RenderContext | undefined,
   ): RobotAnim {
     if (simulation.status === 'won') {
@@ -199,8 +212,8 @@ export class CanvasRenderer implements Renderer {
 
     if (lastAction === 'MOVE_FORWARD') {
       if (
-        this.lastRobotX === simulation.robot.x &&
-        this.lastRobotY === simulation.robot.y
+        this.lastRobotX === robot.x &&
+        this.lastRobotY === robot.y
       ) {
         return 'bump';
       }

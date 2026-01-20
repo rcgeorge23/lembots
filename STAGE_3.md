@@ -30,7 +30,7 @@ Backend: not required for this stage.
 ---
 
 ## Milestone overview (PR-sized chunks)
-- [ ] PR-1: Multi-robot core + level schema updates
+- [x] PR-1: Multi-robot core + level schema updates
 - [ ] PR-2: UI/UX for multi-robot (counters + inspect/debug)
 - [ ] PR-3: Exit + quota win condition (save N of M)
 - [ ] PR-4: Collisions + queueing rules
@@ -55,4 +55,3 @@ Extend level JSON to support spawning and exits:
   "maxTicks": 2000
 }
 ```
-
