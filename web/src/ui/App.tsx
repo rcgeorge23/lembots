@@ -170,7 +170,9 @@ const App = () => {
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
   const [levelThumbnails, setLevelThumbnails] = useState<Record<string, string>>({});
-  const [failReason, setFailReason] = useState<'hazard' | 'step_limit' | 'unknown' | null>(null);
+  const [failReason, setFailReason] = useState<
+    'hazard' | 'step_limit' | 'quota' | 'unknown' | null
+  >(null);
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
@@ -301,6 +303,7 @@ const App = () => {
     const vmResult = stepVm(currentVm, {
       world: currentSimulation.world,
       robot: primaryRobot,
+      exits: currentSimulation.exits,
     });
 
     let nextSimulation = currentSimulation;
@@ -327,8 +330,20 @@ const App = () => {
       const reachedLimit =
         vmResult.state.status === 'step_limit' ||
         nextSimulation.stepCount >= nextSimulation.maxSteps;
+      const savedCount = nextSimulation.robots.filter((robot) => robot.reachedGoal).length;
+      const hasActiveRobot = nextSimulation.robots.some(
+        (robot) => robot.alive && !robot.reachedGoal,
+      );
+      const remainingCount = Math.max(
+        nextSimulation.spawner.count - nextSimulation.spawnedCount,
+        0,
+      );
+      const fellShortOnQuota =
+        savedCount < nextSimulation.requiredSaved && !hasActiveRobot && remainingCount === 0;
       if (reachedLimit) {
         setFailReason('step_limit');
+      } else if (fellShortOnQuota) {
+        setFailReason('quota');
       } else if (nextSimulation.robots.some((robot) => !robot.alive)) {
         setFailReason('hazard');
       } else {
@@ -616,9 +631,11 @@ const App = () => {
   const showOverlay = (simulation.status === 'won' || simulation.status === 'lost') && !isReplaying;
   const failMessage =
     failReason === 'hazard'
-      ? 'Robot hit a hazard.'
+      ? 'A robot hit a hazard.'
       : failReason === 'step_limit'
-        ? 'Too many steps without reaching the goal.'
+        ? 'Too many steps without saving enough robots.'
+        : failReason === 'quota'
+          ? 'Not enough robots made it to the exit.'
         : 'Program failed.';
 
   const statusTone =
@@ -635,7 +652,7 @@ const App = () => {
         ? 'Level Complete'
         : 'All Levels Complete'
       : simulation.status === 'lost'
-        ? 'Robot Lost'
+        ? 'Robots Lost'
         : isRunning
           ? 'Running'
           : isReplaying
@@ -648,6 +665,7 @@ const App = () => {
     (robot) => robot.alive && !robot.reachedGoal,
   ).length;
   const remainingCount = Math.max(simulation.spawner.count - simulation.spawnedCount, 0);
+  const quotaLabel = `${savedCount} / ${simulation.requiredSaved}`;
   const selectedRobotStatus = selectedRobot
     ? selectedRobot.reachedGoal
       ? 'Saved'
@@ -693,11 +711,13 @@ const App = () => {
                   </p>
                   <h3>
                     {simulation.status === 'won'
-                      ? 'Robot reached the goal!'
-                      : 'Robot lost in the maze.'}
+                      ? 'Exit reached!'
+                      : 'Robots lost in the maze.'}
                   </h3>
                   <p className="sim-overlay__hint">
-                    {simulation.status === 'won' ? 'Great job! Ready for the next challenge?' : failMessage}
+                    {simulation.status === 'won'
+                      ? `Saved ${savedCount} of ${simulation.requiredSaved} robots.`
+                      : failMessage}
                   </p>
                   <div className="sim-overlay__actions">
                     {simulation.status === 'won' && hasNextLevel ? (
@@ -807,6 +827,10 @@ const App = () => {
                   <p className="robot-stat__value">{savedCount}</p>
                 </div>
                 <div className="robot-stat">
+                  <p className="robot-stat__label">Quota</p>
+                  <p className="robot-stat__value">{quotaLabel}</p>
+                </div>
+                <div className="robot-stat">
                   <p className="robot-stat__label">Lost</p>
                   <p className="robot-stat__value">{lostCount}</p>
                 </div>
@@ -851,7 +875,7 @@ const App = () => {
                         <dd>{directionLabels[selectedRobot.direction]}</dd>
                       </div>
                       <div>
-                        <dt>Goal</dt>
+                        <dt>Exit</dt>
                         <dd>{selectedRobot.reachedGoal ? 'Reached' : 'Not yet'}</dd>
                       </div>
                     </dl>
