@@ -126,6 +126,74 @@ body {
   background: #0f172a;
 }
 
+.sim-surface {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: fit-content;
+}
+
+.sim-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.sim-overlay__card {
+  background: linear-gradient(150deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  padding: 20px 24px;
+  text-align: center;
+  max-width: 320px;
+  box-shadow: 0 20px 30px rgba(2, 6, 23, 0.5);
+}
+
+.sim-overlay__eyebrow {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.sim-overlay__card h3 {
+  margin: 0 0 8px;
+  color: var(--panel-highlight);
+}
+
+.sim-overlay__hint {
+  margin: 0 0 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sim-overlay__actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sim-overlay__actions button {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: linear-gradient(180deg, #334155, #1f2937);
+  color: var(--panel-highlight);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 16px rgba(15, 23, 42, 0.4);
+}
+
 .blockly-host {
   width: 100%;
   min-height: 320px;
@@ -148,38 +216,114 @@ body {
 
 .levels__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
 }
 
-.levels__button {
+.level-card {
   border: 1px solid #475569;
   background: linear-gradient(180deg, #1f2937, #0f172a);
   color: var(--panel-highlight);
-  padding: 8px 0;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 8px;
+  text-align: left;
 }
 
-.levels__button:hover:not(:disabled) {
+.level-card:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 12px rgba(15, 23, 42, 0.4);
 }
 
-.levels__button.is-current {
+.level-card.is-current {
   border-color: var(--panel-accent);
   background: linear-gradient(180deg, rgba(79, 70, 229, 0.6), rgba(30, 64, 175, 0.8));
   color: #e0e7ff;
 }
 
-.levels__button:disabled {
+.level-card:disabled {
   background: #1f2937;
   color: #475569;
   border-color: #334155;
   cursor: not-allowed;
+}
+
+.level-card__thumb {
+  position: relative;
+  width: 100%;
+  padding: 8px;
+  background: #0f172a;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+}
+
+.level-card__thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.level-card__placeholder {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(30, 41, 59, 0.6));
+}
+
+.level-card__lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.75);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 8px;
+}
+
+.level-card__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--accent-run);
+  color: #0f172a;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+.level-card__info {
+  display: grid;
+  gap: 2px;
+}
+
+.level-card__number {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.level-card__name {
+  margin: 0;
+  color: var(--panel-highlight);
+  font-size: 1rem;
 }
 
 .levels__hint {
