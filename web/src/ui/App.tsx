@@ -27,6 +27,12 @@ import level09 from '../levels/builtin/level-09.json';
 import level10 from '../levels/builtin/level-10.json';
 import level11 from '../levels/builtin/level-11.json';
 import level12 from '../levels/builtin/level-12.json';
+import level13 from '../levels/builtin/level-13.json';
+import level14 from '../levels/builtin/level-14.json';
+import level15 from '../levels/builtin/level-15.json';
+import level16 from '../levels/builtin/level-16.json';
+import level17 from '../levels/builtin/level-17.json';
+import level18 from '../levels/builtin/level-18.json';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
@@ -146,6 +152,12 @@ const levels: LevelDefinition[] = [
   level10,
   level11,
   level12,
+  level13,
+  level14,
+  level15,
+  level16,
+  level17,
+  level18,
 ];
 
 const loadCompletedLevels = (): string[] => {
