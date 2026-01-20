@@ -1,6 +1,6 @@
 import type { SimulationState } from '../engine/sim';
 import { TileType, type World } from '../engine/world';
-import type { RenderAssets, Renderer, SpriteFrame } from './Renderer';
+import type { RenderAssets, RenderContext, Renderer, SpriteFrame } from './Renderer';
 
 const tileMapping: Record<TileType, string> = {
   [TileType.Empty]: 'floor',
@@ -9,71 +9,14 @@ const tileMapping: Record<TileType, string> = {
   [TileType.Hazard]: 'hazard',
 };
 
-const drawRobotSprite = (
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  direction: number,
-  alive: boolean,
-  tileSize: number,
-) => {
-  const bodySize = tileSize * 0.55;
-  const radius = 6;
-  ctx.fillStyle = alive ? '#0f172a' : '#94a3b8';
-  ctx.beginPath();
-  ctx.moveTo(centerX - bodySize / 2 + radius, centerY - bodySize / 2);
-  ctx.lineTo(centerX + bodySize / 2 - radius, centerY - bodySize / 2);
-  ctx.quadraticCurveTo(
-    centerX + bodySize / 2,
-    centerY - bodySize / 2,
-    centerX + bodySize / 2,
-    centerY - bodySize / 2 + radius,
-  );
-  ctx.lineTo(centerX + bodySize / 2, centerY + bodySize / 2 - radius);
-  ctx.quadraticCurveTo(
-    centerX + bodySize / 2,
-    centerY + bodySize / 2,
-    centerX + bodySize / 2 - radius,
-    centerY + bodySize / 2,
-  );
-  ctx.lineTo(centerX - bodySize / 2 + radius, centerY + bodySize / 2);
-  ctx.quadraticCurveTo(
-    centerX - bodySize / 2,
-    centerY + bodySize / 2,
-    centerX - bodySize / 2,
-    centerY + bodySize / 2 - radius,
-  );
-  ctx.lineTo(centerX - bodySize / 2, centerY - bodySize / 2 + radius);
-  ctx.quadraticCurveTo(
-    centerX - bodySize / 2,
-    centerY - bodySize / 2,
-    centerX - bodySize / 2 + radius,
-    centerY - bodySize / 2,
-  );
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#e2e8f0';
-  ctx.beginPath();
-  ctx.arc(centerX - bodySize * 0.12, centerY - bodySize * 0.1, 3, 0, Math.PI * 2);
-  ctx.arc(centerX + bodySize * 0.12, centerY - bodySize * 0.1, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#f97316';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY);
-  const directionOffset = tileSize * 0.3;
-  const directionVectors = [
-    { x: 0, y: -directionOffset },
-    { x: directionOffset, y: 0 },
-    { x: 0, y: directionOffset },
-    { x: -directionOffset, y: 0 },
-  ];
-  const vector = directionVectors[direction];
-  ctx.lineTo(centerX + vector.x, centerY + vector.y);
-  ctx.stroke();
-  ctx.lineWidth = 1;
+type RobotAnim = 'idle' | 'walk' | 'turn' | 'bump' | 'win' | 'fail';
+const animationDurations: Record<RobotAnim, number> = {
+  idle: 900,
+  walk: 240,
+  turn: 320,
+  bump: 180,
+  win: 400,
+  fail: 900,
 };
 
 export class CanvasRenderer implements Renderer {
@@ -81,6 +24,12 @@ export class CanvasRenderer implements Renderer {
   private canvas: HTMLCanvasElement | null = null;
   private assets: RenderAssets | null = null;
   private tileSize: number;
+  private robotAnim: RobotAnim = 'idle';
+  private robotFrameIndex = 0;
+  private robotFrameTime = 0;
+  private lastRobotX: number | null = null;
+  private lastRobotY: number | null = null;
+  private lastRobotDirection: number | null = null;
 
   constructor(tileSize: number) {
     this.tileSize = tileSize;
@@ -97,7 +46,7 @@ export class CanvasRenderer implements Renderer {
     ctx.imageSmoothingEnabled = false;
   }
 
-  render(world: World, simulation: SimulationState, _dt: number): void {
+  render(world: World, simulation: SimulationState, dt: number, context?: RenderContext): void {
     if (!this.ctx || !this.canvas || !this.assets) {
       return;
     }
@@ -140,7 +89,11 @@ export class CanvasRenderer implements Renderer {
     const { robot } = simulation;
     const centerX = (robot.x + 0.5) * this.tileSize;
     const centerY = (robot.y + 0.5) * this.tileSize;
-    drawRobotSprite(ctx, centerX, centerY, robot.direction, robot.alive, this.tileSize);
+    this.drawRobot(ctx, assets, centerX, centerY, robot.direction, simulation, context, dt);
+
+    this.lastRobotX = robot.x;
+    this.lastRobotY = robot.y;
+    this.lastRobotDirection = robot.direction;
   }
 
   private drawTile(
@@ -164,5 +117,90 @@ export class CanvasRenderer implements Renderer {
       sprite.w * scale,
       sprite.h * scale,
     );
+  }
+
+  private drawRobot(
+    ctx: CanvasRenderingContext2D,
+    assets: RenderAssets,
+    centerX: number,
+    centerY: number,
+    direction: number,
+    simulation: SimulationState,
+    context: RenderContext | undefined,
+    dt: number,
+  ) {
+    const nextAnim = this.resolveRobotAnimation(simulation, context);
+    if (nextAnim !== this.robotAnim) {
+      this.robotAnim = nextAnim;
+      this.robotFrameIndex = 0;
+      this.robotFrameTime = 0;
+    }
+
+    const frames = assets.robotAtlas.animations[this.robotAnim];
+    const safeFrames = frames && frames.length > 0 ? frames : assets.robotAtlas.animations.idle;
+    if (!safeFrames || safeFrames.length === 0) {
+      return;
+    }
+
+    const duration = animationDurations[this.robotAnim] ?? 500;
+    this.robotFrameTime += dt;
+    if (safeFrames.length > 1 && this.robotFrameTime >= duration) {
+      const steps = Math.floor(this.robotFrameTime / duration);
+      this.robotFrameTime -= steps * duration;
+      this.robotFrameIndex = (this.robotFrameIndex + steps) % safeFrames.length;
+    }
+
+    const frame = safeFrames[this.robotFrameIndex % safeFrames.length];
+    const scale = this.tileSize / assets.robotAtlas.frameSize;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    const rotation = (Math.PI / 2) * direction;
+    ctx.rotate(rotation);
+    ctx.drawImage(
+      assets.robotImage,
+      frame.x,
+      frame.y,
+      frame.w,
+      frame.h,
+      -frame.w * scale * 0.5,
+      -frame.h * scale * 0.5,
+      frame.w * scale,
+      frame.h * scale,
+    );
+    ctx.restore();
+  }
+
+  private resolveRobotAnimation(
+    simulation: SimulationState,
+    context: RenderContext | undefined,
+  ): RobotAnim {
+    if (simulation.status === 'won') {
+      return 'win';
+    }
+    if (simulation.status === 'lost') {
+      return 'fail';
+    }
+
+    const lastAction = context?.lastAction ?? null;
+    if (!lastAction) {
+      return 'idle';
+    }
+
+    if (lastAction === 'MOVE_FORWARD') {
+      if (
+        this.lastRobotX === simulation.robot.x &&
+        this.lastRobotY === simulation.robot.y
+      ) {
+        return 'bump';
+      }
+      return 'walk';
+    }
+
+    if (lastAction === 'TURN_LEFT' || lastAction === 'TURN_RIGHT') {
+      return 'turn';
+    }
+
+    return 'idle';
   }
 }

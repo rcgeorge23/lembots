@@ -1,4 +1,4 @@
-import type { RenderAssets, TileAtlas } from './Renderer';
+import type { RenderAssets, RobotAtlas, TileAtlas } from './Renderer';
 
 const loadAtlas = async (src: string): Promise<TileAtlas> => {
   const response = await fetch(src);
@@ -15,9 +15,26 @@ const loadTilesImage = async (src: string): Promise<HTMLImageElement> => {
   return image;
 };
 
+const loadRobotAtlas = async (src: string): Promise<RobotAtlas> => {
+  const response = await fetch(src);
+  if (!response.ok) {
+    throw new Error(`Failed to load atlas at ${src}`);
+  }
+  return (await response.json()) as RobotAtlas;
+};
+
+const loadRobotImage = async (src: string): Promise<HTMLImageElement> => {
+  const image = new Image();
+  image.src = src;
+  await image.decode();
+  return image;
+};
+
 export const loadRenderAssets = async (): Promise<RenderAssets> => {
   const tilesAtlas = await loadAtlas('/assets/tiles/atlas.json');
   const tilesImage = await loadTilesImage('/assets/tiles/tiles.png');
+  const robotAtlas = await loadRobotAtlas('/assets/robot/robot_atlas.json');
+  const robotImage = await loadRobotImage('/assets/robot/robot.svg');
 
-  return { tilesImage, tilesAtlas };
+  return { tilesImage, tilesAtlas, robotAtlas, robotImage };
 };
