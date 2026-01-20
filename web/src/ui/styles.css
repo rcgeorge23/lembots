@@ -494,6 +494,174 @@ body {
   gap: 10px;
 }
 
+.console__robots {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  gap: 12px;
+}
+
+.console__robots-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.console__robots-header h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--panel-highlight);
+}
+
+.console__robots-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.console__robots-subtitle {
+  font-style: italic;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.console__robots-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.robot-stat {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.robot-stat__label {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.robot-stat__value {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.console__robots-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.robot-inspector {
+  display: grid;
+  gap: 8px;
+}
+
+.robot-inspector label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.robot-inspector select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--panel-highlight);
+  font-size: 0.9rem;
+}
+
+.robot-inspector__details {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.robot-inspector__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.robot-inspector__details dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.robot-inspector__details dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--panel-highlight);
+}
+
+.robot-inspector__empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.robot-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.robot-roster__empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.robot-chip {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(30, 41, 59, 0.55);
+  color: var(--panel-highlight);
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.robot-chip__status {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.robot-chip--active {
+  border-color: rgba(56, 189, 248, 0.6);
+}
+
+.robot-chip--saved {
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.robot-chip--lost {
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.robot-chip.is-selected {
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
 .status-card {
   border: 1px solid rgba(148, 163, 184, 0.2);
   background: rgba(15, 23, 42, 0.4);

@@ -26,17 +26,21 @@ const actionIndicatorLabels: Record<RobotAction, string> = {
   WAIT: 'WAIT',
 };
 
+interface RobotAnimState {
+  anim: RobotAnim;
+  frameIndex: number;
+  frameTime: number;
+  lastX: number | null;
+  lastY: number | null;
+  lastDirection: number | null;
+}
+
 export class CanvasRenderer implements Renderer {
   private ctx: CanvasRenderingContext2D | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private assets: RenderAssets | null = null;
   private tileSize: number;
-  private robotAnim: RobotAnim = 'idle';
-  private robotFrameIndex = 0;
-  private robotFrameTime = 0;
-  private lastRobotX: number | null = null;
-  private lastRobotY: number | null = null;
-  private lastRobotDirection: number | null = null;
+  private robotStates = new Map<string, RobotAnimState>();
 
   constructor(tileSize: number) {
     this.tileSize = tileSize;
@@ -93,28 +97,65 @@ export class CanvasRenderer implements Renderer {
       }
     }
 
-    const robot = simulation.robots[0];
-    if (robot) {
+    const selectedRobotId = context?.selectedRobotId ?? simulation.robots[0]?.id ?? null;
+    const activeIds = new Set(simulation.robots.map((robot) => robot.id));
+    for (const id of this.robotStates.keys()) {
+      if (!activeIds.has(id)) {
+        this.robotStates.delete(id);
+      }
+    }
+
+    simulation.robots.forEach((robot, index) => {
       const centerX = (robot.x + 0.5) * this.tileSize;
       const centerY = (robot.y + 0.5) * this.tileSize;
-      this.drawRobot(ctx, assets, centerX, centerY, robot.direction, simulation, robot, context, dt);
-      if (context?.lastAction) {
-        this.drawRobotIndicator(
-          ctx,
-          centerX,
-          centerY,
-          actionIndicatorLabels[context.lastAction],
-        );
+      const animState = this.getRobotAnimState(robot.id);
+      this.drawRobot(
+        ctx,
+        assets,
+        centerX,
+        centerY,
+        robot.direction,
+        simulation,
+        robot,
+        animState,
+        context,
+        dt,
+      );
+
+      const isSelected = robot.id === selectedRobotId || (!selectedRobotId && index === 0);
+      if (isSelected) {
+        this.drawRobotHighlight(ctx, centerX, centerY, robot.alive, robot.reachedGoal);
+        if (context?.lastAction) {
+          this.drawRobotIndicator(
+            ctx,
+            centerX,
+            centerY,
+            actionIndicatorLabels[context.lastAction],
+          );
+        }
       }
 
-      this.lastRobotX = robot.x;
-      this.lastRobotY = robot.y;
-      this.lastRobotDirection = robot.direction;
-    } else {
-      this.lastRobotX = null;
-      this.lastRobotY = null;
-      this.lastRobotDirection = null;
+      animState.lastX = robot.x;
+      animState.lastY = robot.y;
+      animState.lastDirection = robot.direction;
+    });
+  }
+
+  private getRobotAnimState(robotId: string): RobotAnimState {
+    const existing = this.robotStates.get(robotId);
+    if (existing) {
+      return existing;
     }
+    const created: RobotAnimState = {
+      anim: 'idle',
+      frameIndex: 0,
+      frameTime: 0,
+      lastX: null,
+      lastY: null,
+      lastDirection: null,
+    };
+    this.robotStates.set(robotId, created);
+    return created;
   }
 
   private drawTile(
@@ -148,37 +189,43 @@ export class CanvasRenderer implements Renderer {
     direction: number,
     simulation: SimulationState,
     robot: SimulationState['robots'][number],
+    animState: RobotAnimState,
     context: RenderContext | undefined,
     dt: number,
   ) {
-    const nextAnim = this.resolveRobotAnimation(simulation, robot, context);
-    if (nextAnim !== this.robotAnim) {
-      this.robotAnim = nextAnim;
-      this.robotFrameIndex = 0;
-      this.robotFrameTime = 0;
+    const nextAnim = this.resolveRobotAnimation(simulation, robot, context, animState);
+    if (nextAnim !== animState.anim) {
+      animState.anim = nextAnim;
+      animState.frameIndex = 0;
+      animState.frameTime = 0;
     }
 
-    const frames = assets.robotAtlas.animations[this.robotAnim];
+    const frames = assets.robotAtlas.animations[animState.anim];
     const safeFrames = frames && frames.length > 0 ? frames : assets.robotAtlas.animations.idle;
     if (!safeFrames || safeFrames.length === 0) {
       return;
     }
 
-    const duration = animationDurations[this.robotAnim] ?? 500;
-    this.robotFrameTime += dt;
-    if (safeFrames.length > 1 && this.robotFrameTime >= duration) {
-      const steps = Math.floor(this.robotFrameTime / duration);
-      this.robotFrameTime -= steps * duration;
-      this.robotFrameIndex = (this.robotFrameIndex + steps) % safeFrames.length;
+    const duration = animationDurations[animState.anim] ?? 500;
+    animState.frameTime += dt;
+    if (safeFrames.length > 1 && animState.frameTime >= duration) {
+      const steps = Math.floor(animState.frameTime / duration);
+      animState.frameTime -= steps * duration;
+      animState.frameIndex = (animState.frameIndex + steps) % safeFrames.length;
     }
 
-    const frame = safeFrames[this.robotFrameIndex % safeFrames.length];
+    const frame = safeFrames[animState.frameIndex % safeFrames.length];
     const scale = this.tileSize / assets.robotAtlas.frameSize;
 
     ctx.save();
     ctx.translate(centerX, centerY);
     const rotation = (Math.PI / 2) * direction;
     ctx.rotate(rotation);
+    if (!robot.alive) {
+      ctx.globalAlpha = 0.45;
+    } else if (robot.reachedGoal) {
+      ctx.globalAlpha = 0.7;
+    }
     ctx.drawImage(
       assets.robotImage,
       frame.x,
@@ -197,6 +244,7 @@ export class CanvasRenderer implements Renderer {
     simulation: SimulationState,
     robot: SimulationState['robots'][number],
     context: RenderContext | undefined,
+    animState: RobotAnimState,
   ): RobotAnim {
     if (simulation.status === 'won') {
       return 'win';
@@ -212,8 +260,8 @@ export class CanvasRenderer implements Renderer {
 
     if (lastAction === 'MOVE_FORWARD') {
       if (
-        this.lastRobotX === robot.x &&
-        this.lastRobotY === robot.y
+        animState.lastX === robot.x &&
+        animState.lastY === robot.y
       ) {
         return 'bump';
       }
@@ -225,6 +273,28 @@ export class CanvasRenderer implements Renderer {
     }
 
     return 'idle';
+  }
+
+  private drawRobotHighlight(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    centerY: number,
+    isAlive: boolean,
+    reachedGoal: boolean,
+  ) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, this.tileSize * 0.48, 0, Math.PI * 2);
+    ctx.strokeStyle = reachedGoal
+      ? 'rgba(34, 197, 94, 0.9)'
+      : isAlive
+        ? 'rgba(56, 189, 248, 0.85)'
+        : 'rgba(248, 113, 113, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.restore();
   }
 
   private drawRobotIndicator(
