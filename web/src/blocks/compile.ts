@@ -21,6 +21,8 @@ const compileCondition = (block: Blockly.Block | null): ConditionType => {
       return 'HAZARD_LEFT';
     case 'lembot_wall_left':
       return 'WALL_LEFT';
+    case 'lembot_signal_active':
+      return 'GLOBAL_SIGNAL_ON';
     default:
       throw new Error(`Unsupported condition block: ${block.type}`);
   }
@@ -36,6 +38,10 @@ const compileBlock = (block: Blockly.Block): AstNode => {
       return { type: 'action', action: 'TURN_RIGHT', blockId: block.id };
     case 'lembot_wait':
       return { type: 'action', action: 'WAIT', blockId: block.id };
+    case 'lembot_signal_on':
+      return { type: 'action', action: 'SIGNAL_ON', blockId: block.id };
+    case 'lembot_signal_off':
+      return { type: 'action', action: 'SIGNAL_OFF', blockId: block.id };
     case 'lembot_repeat': {
       const rawCount = Number(block.getFieldValue('COUNT'));
       const count = Number.isFinite(rawCount) ? Math.max(0, rawCount) : 0;

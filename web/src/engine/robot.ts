@@ -4,7 +4,9 @@ export type RobotAction =
   | 'MOVE_FORWARD'
   | 'TURN_LEFT'
   | 'TURN_RIGHT'
-  | 'WAIT';
+  | 'WAIT'
+  | 'SIGNAL_ON'
+  | 'SIGNAL_OFF';
 
 export interface RobotState {
   id: string;

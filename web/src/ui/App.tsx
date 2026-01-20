@@ -47,6 +47,8 @@ const actionLabels: Record<RobotAction, string> = {
   TURN_LEFT: 'Turn Left',
   TURN_RIGHT: 'Turn Right',
   WAIT: 'Wait',
+  SIGNAL_ON: 'Signal On',
+  SIGNAL_OFF: 'Signal Off',
 };
 const directionLabels: Record<Direction, string> = {
   0: 'North',
@@ -363,6 +365,7 @@ const App = () => {
       world: currentSimulation.world,
       robot: primaryRobot,
       exits: currentSimulation.exits,
+      globalSignal: currentSimulation.globalSignal,
     });
 
     let nextSimulation = currentSimulation;
@@ -740,6 +743,7 @@ const App = () => {
       ? 'Open'
       : 'Closed'
     : '—';
+  const signalStatus = simulation.globalSignal ? 'On' : 'Off';
   const quotaLabel = `${savedCount} / ${simulation.requiredSaved}`;
   const selectedRobotStatus = selectedRobot
     ? selectedRobot.reachedGoal
@@ -884,6 +888,10 @@ const App = () => {
               <div className="status-card">
                 <p className="status-card__label">Doors</p>
                 <p className="status-card__value">{doorStatus}</p>
+              </div>
+              <div className="status-card">
+                <p className="status-card__label">Signal</p>
+                <p className="status-card__value">{signalStatus}</p>
               </div>
             </div>
             <div className="console__robots">
