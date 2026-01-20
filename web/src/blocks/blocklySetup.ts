@@ -125,6 +125,30 @@ const CONDITION_BLOCKS = [
     output: 'Boolean',
     colour: 30,
   },
+  {
+    type: 'lembot_hazard_right',
+    message0: 'hazard to the right?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_wall_right',
+    message0: 'wall to the right?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_hazard_left',
+    message0: 'hazard to the left?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_wall_left',
+    message0: 'wall to the left?',
+    output: 'Boolean',
+    colour: 30,
+  },
 ] as const;
 
 export const registerBlocks = (): void => {

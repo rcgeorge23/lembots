@@ -1,5 +1,5 @@
 import type { RobotAction, RobotState } from '../engine/robot';
-import { getForwardPosition } from '../engine/rules';
+import { getForwardPosition, turnLeft, turnRight } from '../engine/rules';
 import { isGoal, isHazard, isWall, type World } from '../engine/world';
 import type { ActionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
 
@@ -65,6 +65,26 @@ const evaluateCondition = (condition: ConditionType, context: VmContext): boolea
       return isGoal(world, robot.x, robot.y);
     case 'ON_HAZARD':
       return isHazard(world, robot.x, robot.y);
+    case 'HAZARD_RIGHT': {
+      const rightDirection = turnRight(robot.direction);
+      const right = getForwardPosition(robot, rightDirection);
+      return isHazard(world, right.x, right.y);
+    }
+    case 'WALL_RIGHT': {
+      const rightDirection = turnRight(robot.direction);
+      const right = getForwardPosition(robot, rightDirection);
+      return isWall(world, right.x, right.y);
+    }
+    case 'HAZARD_LEFT': {
+      const leftDirection = turnLeft(robot.direction);
+      const left = getForwardPosition(robot, leftDirection);
+      return isHazard(world, left.x, left.y);
+    }
+    case 'WALL_LEFT': {
+      const leftDirection = turnLeft(robot.direction);
+      const left = getForwardPosition(robot, leftDirection);
+      return isWall(world, left.x, left.y);
+    }
     default:
       return false;
   }

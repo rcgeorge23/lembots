@@ -13,6 +13,14 @@ const compileCondition = (block: Blockly.Block | null): ConditionType => {
       return 'ON_GOAL';
     case 'lembot_on_hazard':
       return 'ON_HAZARD';
+    case 'lembot_hazard_right':
+      return 'HAZARD_RIGHT';
+    case 'lembot_wall_right':
+      return 'WALL_RIGHT';
+    case 'lembot_hazard_left':
+      return 'HAZARD_LEFT';
+    case 'lembot_wall_left':
+      return 'WALL_LEFT';
     default:
       throw new Error(`Unsupported condition block: ${block.type}`);
   }
