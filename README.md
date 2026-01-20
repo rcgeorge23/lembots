@@ -199,7 +199,7 @@ Each task should be completed in a deployable state and include appropriate test
 1. [x] **Scaffold the frontend app**
    - Create the `web/` React/TypeScript app with a running dev server.
    - Add a basic layout for the canvas, block editor, and controls.
-2. [ ] **Implement the deterministic simulation engine**
+2. [x] **Implement the deterministic simulation engine**
    - Build the grid world, robot state, and tick loop in `src/engine/`.
    - Support movement, turning, waiting, walls, goals, and hazards.
 3. [ ] **Integrate Blockly and compile blocks**
