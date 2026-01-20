@@ -12,6 +12,13 @@ This document is a high-level project overview and a starter task list for Codex
 
 ---
 
+## Development
+1. Install dependencies: `npm install` (or `pnpm install`).
+2. Start the dev server: `npm run dev`.
+3. Open the URL printed in the terminal.
+
+---
+
 ## Core gameplay loop
 1. Choose a level.
 2. Build a program with blocks (Scratch-like).
@@ -187,8 +194,9 @@ Goal: deliver a minimal vertical slice where a user can place a few blocks and s
 
 ## Codex build plan (checklist)
 Use this step-by-step plan when building the project. Mark each item as complete by changing `[ ]` to `[x]`.
+Each task should be completed in a deployable state and include appropriate testing (unit/integration) for the changes.
 
-1. [ ] **Scaffold the frontend app**
+1. [x] **Scaffold the frontend app**
    - Create the `web/` React/TypeScript app with a running dev server.
    - Add a basic layout for the canvas, block editor, and controls.
 2. [ ] **Implement the deterministic simulation engine**
