@@ -31,7 +31,7 @@ Backend: not required for this stage.
 
 ## Milestone overview (PR-sized chunks)
 - [x] PR-1: Multi-robot core + level schema updates
-- [ ] PR-2: UI/UX for multi-robot (counters + inspect/debug)
+- [x] PR-2: UI/UX for multi-robot (counters + inspect/debug)
 - [ ] PR-3: Exit + quota win condition (save N of M)
 - [ ] PR-4: Collisions + queueing rules
 - [ ] PR-5: Pressure plates + doors (first true cooperation puzzles)

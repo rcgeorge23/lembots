@@ -41,6 +41,12 @@ const actionLabels: Record<RobotAction, string> = {
   TURN_RIGHT: 'Turn Right',
   WAIT: 'Wait',
 };
+const directionLabels: Record<Direction, string> = {
+  0: 'North',
+  1: 'East',
+  2: 'South',
+  3: 'West',
+};
 const tileKeyByType: Record<TileType, string> = {
   [TileType.Empty]: 'floor',
   [TileType.Wall]: 'wall',
@@ -165,6 +171,9 @@ const App = () => {
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
   const [levelThumbnails, setLevelThumbnails] = useState<Record<string, string>>({});
   const [failReason, setFailReason] = useState<'hazard' | 'step_limit' | 'unknown' | null>(null);
+  const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
+    () => simulation.robots[0]?.id ?? null,
+  );
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -201,6 +210,14 @@ const App = () => {
   useEffect(() => {
     simulationRef.current = simulation;
   }, [simulation]);
+
+  useEffect(() => {
+    const fallbackId = simulation.robots[0]?.id ?? null;
+    if (selectedRobotId && simulation.robots.some((robot) => robot.id === selectedRobotId)) {
+      return;
+    }
+    setSelectedRobotId(fallbackId);
+  }, [selectedRobotId, simulation.robots]);
 
   useEffect(() => {
     vmRef.current = vmState;
@@ -442,7 +459,7 @@ const App = () => {
       thumbnails[level.id] = canvas.toDataURL('image/png');
     });
     setLevelThumbnails(thumbnails);
-  }, [renderAssets]);
+  }, [renderAssets, selectedRobotId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -469,6 +486,7 @@ const App = () => {
       lastTime = time;
       renderer.render(simulationRef.current.world, simulationRef.current, dt, {
         lastAction: currentActionRef.current,
+        selectedRobotId,
       });
       animationFrame = window.requestAnimationFrame(renderLoop);
     };
@@ -580,6 +598,16 @@ const App = () => {
     traceLogRef.current.scrollTop = traceLogRef.current.scrollHeight;
   }, [actionTrace.length]);
 
+  const selectedRobot = useMemo(() => {
+    if (selectedRobotId) {
+      const match = simulation.robots.find((robot) => robot.id === selectedRobotId);
+      if (match) {
+        return match;
+      }
+    }
+    return simulation.robots[0] ?? null;
+  }, [selectedRobotId, simulation.robots]);
+
   const isBusy = isRunning || isReplaying;
   const hasReplay = lastRunActions.length > 0;
   const currentLevel = levels[levelIndex];
@@ -613,6 +641,26 @@ const App = () => {
           : isReplaying
             ? 'Replaying'
             : 'Ready';
+
+  const savedCount = simulation.robots.filter((robot) => robot.reachedGoal).length;
+  const lostCount = simulation.robots.filter((robot) => !robot.alive).length;
+  const activeCount = simulation.robots.filter(
+    (robot) => robot.alive && !robot.reachedGoal,
+  ).length;
+  const remainingCount = Math.max(simulation.spawner.count - simulation.spawnedCount, 0);
+  const selectedRobotStatus = selectedRobot
+    ? selectedRobot.reachedGoal
+      ? 'Saved'
+      : selectedRobot.alive
+        ? 'Active'
+        : 'Lost'
+    : '—';
+  const nextSpawnMessage =
+    simulation.spawnedCount >= simulation.spawner.count
+      ? 'All robots deployed.'
+      : simulation.nextSpawnTick === null
+        ? 'Spawner idle.'
+        : `Next spawn in ${Math.max(simulation.nextSpawnTick - simulation.stepCount, 0)} ticks.`;
 
   return (
     <div className="app">
@@ -737,6 +785,110 @@ const App = () => {
                 <p className="status-card__value">
                   {currentAction ? actionLabels[currentAction] : '—'}
                 </p>
+              </div>
+            </div>
+            <div className="console__robots">
+              <div className="console__robots-header">
+                <div>
+                  <h3>Robot Monitor</h3>
+                  <p>
+                    Spawned {simulation.spawnedCount} / {simulation.spawner.count}
+                  </p>
+                </div>
+                <p className="console__robots-subtitle">{nextSpawnMessage}</p>
+              </div>
+              <div className="console__robots-stats">
+                <div className="robot-stat">
+                  <p className="robot-stat__label">Active</p>
+                  <p className="robot-stat__value">{activeCount}</p>
+                </div>
+                <div className="robot-stat">
+                  <p className="robot-stat__label">Saved</p>
+                  <p className="robot-stat__value">{savedCount}</p>
+                </div>
+                <div className="robot-stat">
+                  <p className="robot-stat__label">Lost</p>
+                  <p className="robot-stat__value">{lostCount}</p>
+                </div>
+                <div className="robot-stat">
+                  <p className="robot-stat__label">Waiting</p>
+                  <p className="robot-stat__value">{remainingCount}</p>
+                </div>
+              </div>
+              <div className="console__robots-body">
+                <div className="robot-inspector">
+                  <label htmlFor="robot-select">Inspect robot</label>
+                  <select
+                    id="robot-select"
+                    value={selectedRobot?.id ?? ''}
+                    onChange={(event) => setSelectedRobotId(event.target.value)}
+                    disabled={simulation.robots.length === 0}
+                  >
+                    {simulation.robots.length === 0 ? (
+                      <option value="">No robots spawned</option>
+                    ) : (
+                      simulation.robots.map((robot) => (
+                        <option key={robot.id} value={robot.id}>
+                          {robot.id}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {selectedRobot ? (
+                    <dl className="robot-inspector__details">
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{selectedRobotStatus}</dd>
+                      </div>
+                      <div>
+                        <dt>Position</dt>
+                        <dd>
+                          ({selectedRobot.x}, {selectedRobot.y})
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Facing</dt>
+                        <dd>{directionLabels[selectedRobot.direction]}</dd>
+                      </div>
+                      <div>
+                        <dt>Goal</dt>
+                        <dd>{selectedRobot.reachedGoal ? 'Reached' : 'Not yet'}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="robot-inspector__empty">No robots are active yet.</p>
+                  )}
+                </div>
+                <div className="robot-roster" role="list">
+                  {simulation.robots.length === 0 ? (
+                    <p className="robot-roster__empty">Spawn queue is waiting.</p>
+                  ) : (
+                    simulation.robots.map((robot) => {
+                      const status = robot.reachedGoal
+                        ? 'saved'
+                        : robot.alive
+                          ? 'active'
+                          : 'lost';
+                      const isSelected = selectedRobot?.id === robot.id;
+                      return (
+                        <button
+                          key={robot.id}
+                          type="button"
+                          className={`robot-chip robot-chip--${status}${
+                            isSelected ? ' is-selected' : ''
+                          }`}
+                          onClick={() => setSelectedRobotId(robot.id)}
+                          role="listitem"
+                        >
+                          <span>{robot.id}</span>
+                          <span className="robot-chip__status">
+                            {status === 'saved' ? 'Saved' : status === 'lost' ? 'Lost' : 'Active'}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>
