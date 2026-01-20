@@ -127,21 +127,22 @@ const App = () => {
   const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
     const world = createWorld(level.grid);
     const fallbackStart = level.start ?? { x: 1, y: 1, dir: 1 };
-    const spawner: Spawner =
+    const rawSpawner =
       level.spawner ?? {
         x: fallbackStart.x,
         y: fallbackStart.y,
-        dir: parseDirection(fallbackStart.dir),
+        dir: fallbackStart.dir,
         count: 1,
         intervalTicks: 0,
       };
+    const spawner: Spawner = {
+      ...rawSpawner,
+      dir: parseDirection(rawSpawner.dir),
+    };
     const exits = level.exits ?? (level.goal ? [level.goal] : []);
     return createSimulation({
       world,
-      spawner: {
-        ...spawner,
-        dir: parseDirection(spawner.dir),
-      },
+      spawner,
       exits,
       maxSteps: level.maxTicks ?? 200,
       requiredSaved: level.requiredSaved ?? 1,
