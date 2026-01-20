@@ -15,6 +15,13 @@ export interface RepeatNode {
   blockId: string;
 }
 
+export interface RepeatUntilNode {
+  type: 'repeat_until';
+  condition: ConditionType;
+  body: ProgramNode;
+  blockId: string;
+}
+
 export interface IfNode {
   type: 'if';
   condition: ConditionType;
@@ -23,7 +30,7 @@ export interface IfNode {
   blockId: string;
 }
 
-export type AstNode = ActionNode | RepeatNode | IfNode;
+export type AstNode = ActionNode | RepeatNode | RepeatUntilNode | IfNode;
 
 export interface ProgramNode {
   type: 'sequence';
