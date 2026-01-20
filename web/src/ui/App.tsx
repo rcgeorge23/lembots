@@ -597,57 +597,6 @@ const App = () => {
         </section>
         <section className="panel panel--controls">
           <h2>Command Console</h2>
-          <div className="levels">
-            <h3>Levels</h3>
-            <div className="levels__grid">
-              {levels.map((level, index) => {
-                const previousLevel = levels[index - 1];
-                const isUnlocked =
-                  index === 0 ||
-                  completedLevelSet.has(level.id) ||
-                  (previousLevel ? completedLevelSet.has(previousLevel.id) : false);
-                const isCurrent = index === levelIndex;
-                const isCompleted = completedLevelSet.has(level.id);
-                const thumbnail = levelThumbnails[level.id];
-                return (
-                  <button
-                    key={level.id}
-                    type="button"
-                    className={`level-card${isCurrent ? ' is-current' : ''}${
-                      isCompleted ? ' is-complete' : ''
-                    }`}
-                    onClick={() => loadLevel(index)}
-                    disabled={!isUnlocked || isBusy}
-                  >
-                    <div className="level-card__thumb">
-                      {thumbnail ? (
-                        <img src={thumbnail} alt={`Level ${index + 1} preview`} />
-                      ) : (
-                        <div className="level-card__placeholder" aria-hidden="true" />
-                      )}
-                      {!isUnlocked ? (
-                        <div className="level-card__lock">Locked</div>
-                      ) : null}
-                      {isCompleted ? (
-                        <div className="level-card__badge" aria-label="Completed">
-                          ✓
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="level-card__info">
-                      <p className="level-card__number">Level {index + 1}</p>
-                      <p className="level-card__name">{level.name}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="levels__hint">
-              {completedLevels.length === 0
-                ? 'Complete level 1 to unlock level 2.'
-                : 'Complete a level to unlock the next one.'}
-            </p>
-          </div>
           <div className="console">
             <div className="console__controls">
               <button type="button" onClick={handleRun} disabled={isBusy}>
@@ -729,6 +678,57 @@ const App = () => {
           </div>
         </section>
       </main>
+      <section className="levels-strip" aria-label="Level selection">
+        <div className="levels-strip__header">
+          <h3>Levels</h3>
+          <p className="levels__hint">
+            {completedLevels.length === 0
+              ? 'Complete level 1 to unlock level 2.'
+              : 'Complete a level to unlock the next one.'}
+          </p>
+        </div>
+        <div className="levels__grid">
+          {levels.map((level, index) => {
+            const previousLevel = levels[index - 1];
+            const isUnlocked =
+              index === 0 ||
+              completedLevelSet.has(level.id) ||
+              (previousLevel ? completedLevelSet.has(previousLevel.id) : false);
+            const isCurrent = index === levelIndex;
+            const isCompleted = completedLevelSet.has(level.id);
+            const thumbnail = levelThumbnails[level.id];
+            return (
+              <button
+                key={level.id}
+                type="button"
+                className={`level-card${isCurrent ? ' is-current' : ''}${
+                  isCompleted ? ' is-complete' : ''
+                }`}
+                onClick={() => loadLevel(index)}
+                disabled={!isUnlocked || isBusy}
+              >
+                <div className="level-card__thumb">
+                  {thumbnail ? (
+                    <img src={thumbnail} alt={`Level ${index + 1} preview`} />
+                  ) : (
+                    <div className="level-card__placeholder" aria-hidden="true" />
+                  )}
+                  {!isUnlocked ? <div className="level-card__lock">Locked</div> : null}
+                  {isCompleted ? (
+                    <div className="level-card__badge" aria-label="Completed">
+                      ✓
+                    </div>
+                  ) : null}
+                </div>
+                <div className="level-card__info">
+                  <p className="level-card__number">Level {index + 1}</p>
+                  <p className="level-card__name">{level.name}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 };
