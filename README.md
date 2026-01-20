@@ -207,7 +207,7 @@ Each task should be completed in a deployable state and include appropriate test
 2. [x] **Implement the deterministic simulation engine**
    - Build the grid world, robot state, and tick loop in `src/engine/`.
    - Support movement, turning, waiting, walls, goals, and hazards.
-3. [ ] **Integrate Blockly and compile blocks**
+3. [x] **Integrate Blockly and compile blocks**
    - Define the MVP block set in `src/blocks/`.
    - Compile blocks to a safe AST/bytecode and execute via a VM.
 4. [ ] **Wire UI controls to the simulation**
