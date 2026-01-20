@@ -21,13 +21,13 @@ const compileCondition = (block: Blockly.Block | null): ConditionType => {
 const compileBlock = (block: Blockly.Block): AstNode => {
   switch (block.type) {
     case 'lembot_move_forward':
-      return { type: 'action', action: 'MOVE_FORWARD' };
+      return { type: 'action', action: 'MOVE_FORWARD', blockId: block.id };
     case 'lembot_turn_left':
-      return { type: 'action', action: 'TURN_LEFT' };
+      return { type: 'action', action: 'TURN_LEFT', blockId: block.id };
     case 'lembot_turn_right':
-      return { type: 'action', action: 'TURN_RIGHT' };
+      return { type: 'action', action: 'TURN_RIGHT', blockId: block.id };
     case 'lembot_wait':
-      return { type: 'action', action: 'WAIT' };
+      return { type: 'action', action: 'WAIT', blockId: block.id };
     case 'lembot_repeat': {
       const rawCount = Number(block.getFieldValue('COUNT'));
       const count = Number.isFinite(rawCount) ? Math.max(0, rawCount) : 0;
@@ -36,6 +36,7 @@ const compileBlock = (block: Blockly.Block): AstNode => {
         type: 'repeat',
         count,
         body: compileBlockChain(bodyBlock),
+        blockId: block.id,
       };
     }
     case 'lembot_if': {
@@ -48,6 +49,7 @@ const compileBlock = (block: Blockly.Block): AstNode => {
         condition: compileCondition(conditionBlock),
         thenBranch: compileBlockChain(thenBlock),
         elseBranch,
+        blockId: block.id,
       };
     }
     default:
