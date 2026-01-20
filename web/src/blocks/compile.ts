@@ -39,6 +39,16 @@ const compileBlock = (block: Blockly.Block): AstNode => {
         blockId: block.id,
       };
     }
+    case 'lembot_repeat_until': {
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      const bodyBlock = block.getInputTargetBlock('DO');
+      return {
+        type: 'repeat_until',
+        condition: compileCondition(conditionBlock),
+        body: compileBlockChain(bodyBlock),
+        blockId: block.id,
+      };
+    }
     case 'lembot_if': {
       const conditionBlock = block.getInputTargetBlock('CONDITION');
       const thenBlock = block.getInputTargetBlock('THEN');

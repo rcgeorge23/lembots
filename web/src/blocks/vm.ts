@@ -1,7 +1,7 @@
 import type { RobotAction, RobotState } from '../engine/robot';
 import { getForwardPosition } from '../engine/rules';
 import { isGoal, isHazard, isWall, type World } from '../engine/world';
-import type { ActionNode, ConditionType, ProgramNode } from './types';
+import type { ActionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
 
 export type VmStatus = 'running' | 'done' | 'step_limit';
 
@@ -23,7 +23,13 @@ interface RepeatFrame {
   remaining: number;
 }
 
-type Frame = SequenceFrame | RepeatFrame;
+interface RepeatUntilFrame {
+  kind: 'repeat_until';
+  node: RepeatUntilNode;
+  index: number;
+}
+
+type Frame = SequenceFrame | RepeatFrame | RepeatUntilFrame;
 
 export interface VmState {
   program: ProgramNode;
@@ -88,6 +94,23 @@ export const stepVm = (state: VmState, context: VmContext): VmStepResult => {
 
   while (stack.length > 0) {
     const frame = stack[stack.length - 1];
+    const sequenceNode = frame.kind === 'repeat_until' ? frame.node.body : frame.node;
+
+    if (frame.kind === 'repeat_until') {
+      if (frame.index === 0 && evaluateCondition(frame.node.condition, context)) {
+        stack.pop();
+        continue;
+      }
+
+      if (frame.index >= sequenceNode.steps.length) {
+        frame.index = 0;
+
+        if (evaluateCondition(frame.node.condition, context)) {
+          stack.pop();
+        }
+        continue;
+      }
+    }
 
     if (frame.kind === 'repeat') {
       if (frame.remaining <= 0) {
@@ -95,7 +118,7 @@ export const stepVm = (state: VmState, context: VmContext): VmStepResult => {
         continue;
       }
 
-      if (frame.index >= frame.node.steps.length) {
+      if (frame.index >= sequenceNode.steps.length) {
         frame.remaining -= 1;
         frame.index = 0;
 
@@ -106,12 +129,12 @@ export const stepVm = (state: VmState, context: VmContext): VmStepResult => {
       }
     }
 
-    if (frame.index >= frame.node.steps.length) {
+    if (frame.index >= sequenceNode.steps.length) {
       stack.pop();
       continue;
     }
 
-    const node = frame.node.steps[frame.index];
+    const node = sequenceNode.steps[frame.index];
     frame.index += 1;
 
     if (node.type === 'action') {
@@ -134,6 +157,15 @@ export const stepVm = (state: VmState, context: VmContext): VmStepResult => {
           remaining: node.count,
         });
       }
+      continue;
+    }
+
+    if (node.type === 'repeat_until') {
+      stack.push({
+        kind: 'repeat_until',
+        node,
+        index: 0,
+      });
       continue;
     }
 

@@ -56,6 +56,27 @@ const CONTROL_BLOCKS = [
     colour: 120,
   },
   {
+    type: 'lembot_repeat_until',
+    message0: 'repeat until %1 %2 %3',
+    args0: [
+      {
+        type: 'input_value',
+        name: 'CONDITION',
+        check: 'Boolean',
+      },
+      {
+        type: 'input_dummy',
+      },
+      {
+        type: 'input_statement',
+        name: 'DO',
+      },
+    ],
+    previousStatement: null,
+    nextStatement: null,
+    colour: 120,
+  },
+  {
     type: 'lembot_if',
     message0: 'if %1 then %2 %3 else %4 %5',
     args0: [
@@ -138,6 +159,10 @@ export const toolboxDefinition = {
         {
           kind: 'block',
           type: 'lembot_repeat',
+        },
+        {
+          kind: 'block',
+          type: 'lembot_repeat_until',
         },
         {
           kind: 'block',
