@@ -41,6 +41,10 @@ body {
   overflow: hidden;
 }
 
+.app--levels-open {
+  overflow: hidden;
+}
+
 .app__header {
   display: flex;
   flex-wrap: wrap;
@@ -978,7 +982,7 @@ body {
   font-size: 0.85rem;
 }
 
-.editor-backdrop,
+.panel-backdrop,
 .mobile-console,
 .mobile-editor-toggle {
   display: none;
@@ -1051,13 +1055,35 @@ body {
     transform: translateX(0);
   }
 
+  .levels-strip {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(420px, 92vw);
+    max-width: 100%;
+    transform: translateX(105%);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    z-index: 18;
+    border-radius: 0;
+    padding: 20px 18px 28px;
+    margin: 0;
+    border-top: none;
+    overflow-y: auto;
+    box-shadow: -12px 0 24px rgba(2, 6, 23, 0.6);
+  }
+
+  .app--levels-open .levels-strip {
+    transform: translateX(0);
+  }
+
   .panel--editor .blockly-host {
     height: 100%;
     min-height: 0;
     flex: 1;
   }
 
-  .editor-backdrop {
+  .panel-backdrop {
     display: block;
     position: fixed;
     inset: 0;
@@ -1068,7 +1094,8 @@ body {
     z-index: 15;
   }
 
-  .app--editor-open .editor-backdrop {
+  .app--editor-open .panel-backdrop,
+  .app--levels-open .panel-backdrop {
     opacity: 1;
     pointer-events: auto;
   }
@@ -1112,7 +1139,7 @@ body {
 
   .mobile-console__actions {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -1133,7 +1160,19 @@ body {
     justify-content: center;
   }
 
+  .mobile-levels-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    justify-content: center;
+  }
+
   .mobile-editor-toggle__icon {
+    font-size: 1rem;
+  }
+
+  .mobile-levels-toggle__icon {
     font-size: 1rem;
   }
 
@@ -1145,5 +1184,9 @@ body {
 
   .app--editor-open .mobile-editor-toggle {
     --amiga-accent: #f87171;
+  }
+
+  .app--levels-open .mobile-levels-toggle {
+    --amiga-accent: #38bdf8;
   }
 }

@@ -272,6 +272,7 @@ const App = () => {
     'hazard' | 'step_limit' | 'quota' | 'unknown' | null
   >(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isLevelsOpen, setIsLevelsOpen] = useState(false);
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
@@ -307,6 +308,7 @@ const App = () => {
       setLevelIndex(nextIndex);
       setIsRunning(false);
       setIsReplaying(false);
+      setIsLevelsOpen(false);
       setSimulation(createSimulationForLevel(nextLevel));
       setVmState(null);
       setReplayIndex(0);
@@ -1015,7 +1017,11 @@ const App = () => {
   }, [getBubbleShift, tileBubble, tileBubblePosition.left, tileBubblePosition.top]);
 
   return (
-    <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
+    <div
+      className={`app${isEditorOpen ? ' app--editor-open' : ''}${
+        isLevelsOpen ? ' app--levels-open' : ''
+      }`}
+    >
       <header className="app__header">
         <div>
           <p className="app__tag">Retro Puzzle Lab</p>
@@ -1388,7 +1394,14 @@ const App = () => {
           </div>
         </section>
       </main>
-      <div className="editor-backdrop" onClick={() => setIsEditorOpen(false)} aria-hidden />
+      <div
+        className="panel-backdrop"
+        onClick={() => {
+          setIsEditorOpen(false);
+          setIsLevelsOpen(false);
+        }}
+        aria-hidden
+      />
       <div className="mobile-console" role="region" aria-label="Quick controls">
         <div className="mobile-console__info">
           <div>
@@ -1420,7 +1433,15 @@ const App = () => {
           <button
             type="button"
             className="mobile-editor-toggle"
-            onClick={() => setIsEditorOpen((isOpen) => !isOpen)}
+            onClick={() =>
+              setIsEditorOpen((isOpen) => {
+                const nextState = !isOpen;
+                if (nextState) {
+                  setIsLevelsOpen(false);
+                }
+                return nextState;
+              })
+            }
             aria-label="Toggle block editor"
             aria-expanded={isEditorOpen}
           >
@@ -1430,6 +1451,26 @@ const App = () => {
             <span className="mobile-editor-toggle__chevron" aria-hidden="true">
               &laquo;&laquo;
             </span>
+          </button>
+          <button
+            type="button"
+            className="mobile-levels-toggle"
+            onClick={() =>
+              setIsLevelsOpen((isOpen) => {
+                const nextState = !isOpen;
+                if (nextState) {
+                  setIsEditorOpen(false);
+                }
+                return nextState;
+              })
+            }
+            aria-label="Toggle level selection"
+            aria-expanded={isLevelsOpen}
+          >
+            <span className="mobile-levels-toggle__icon" aria-hidden="true">
+              🧭
+            </span>
+            Levels
           </button>
         </div>
       </div>
