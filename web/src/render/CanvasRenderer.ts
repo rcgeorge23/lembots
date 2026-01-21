@@ -273,25 +273,18 @@ export class CanvasRenderer implements Renderer {
   }
 
   private drawWaterTile(col: number, row: number) {
-    if (!this.ctx) {
+    if (!this.ctx || !this.assets) {
       return;
     }
-    const padding = this.tileSize * 0.08;
+    const { waterImage } = this.assets;
     this.ctx.save();
-    this.ctx.fillStyle = '#38bdf8';
-    this.ctx.strokeStyle = '#0ea5e9';
-    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.06);
-    this.ctx.fillRect(
-      col * this.tileSize + padding,
-      row * this.tileSize + padding,
-      this.tileSize - padding * 2,
-      this.tileSize - padding * 2,
-    );
-    this.ctx.strokeRect(
-      col * this.tileSize + padding,
-      row * this.tileSize + padding,
-      this.tileSize - padding * 2,
-      this.tileSize - padding * 2,
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.drawImage(
+      waterImage,
+      col * this.tileSize,
+      row * this.tileSize,
+      this.tileSize,
+      this.tileSize,
     );
     this.ctx.restore();
   }

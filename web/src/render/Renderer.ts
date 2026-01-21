@@ -22,6 +22,7 @@ export interface RobotAtlas {
 export interface RenderAssets {
   tilesAtlas: TileAtlas;
   tilesImage: HTMLImageElement;
+  waterImage: HTMLImageElement;
   robotAtlas: RobotAtlas;
   robotImage: HTMLImageElement;
 }

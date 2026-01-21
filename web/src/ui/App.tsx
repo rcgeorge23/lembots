@@ -107,8 +107,6 @@ const tileInfoByType: Record<TileType, { title: string; description: string }> =
 const thumbnailTileSize = 12;
 const thumbnailDoorFill = '#1e293b';
 const thumbnailPlateFill = '#f59e0b';
-const thumbnailWaterFill = '#38bdf8';
-const thumbnailWaterStroke = '#0ea5e9';
 const thumbnailRaftFill = '#b45309';
 const thumbnailRaftStroke = '#7c2d12';
 
@@ -177,18 +175,16 @@ const drawThumbnailWater = (
   col: number,
   row: number,
   tileSize: number,
+  waterImage: HTMLImageElement,
 ) => {
-  const padding = tileSize * 0.1;
   ctx.save();
-  ctx.fillStyle = thumbnailWaterFill;
-  ctx.strokeStyle = thumbnailWaterStroke;
-  ctx.lineWidth = Math.max(1, tileSize * 0.06);
-  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
-  ctx.strokeRect(
-    col * tileSize + padding,
-    row * tileSize + padding,
-    tileSize - padding * 2,
-    tileSize - padding * 2,
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(
+    waterImage,
+    col * tileSize,
+    row * tileSize,
+    tileSize,
+    tileSize,
   );
   ctx.restore();
 };
@@ -697,7 +693,7 @@ const App = () => {
         for (let col = 0; col < world.width; col += 1) {
           const tile = world.grid[row][col];
           if (tile === TileType.Water) {
-            drawThumbnailWater(ctx, col, row, thumbnailTileSize);
+            drawThumbnailWater(ctx, col, row, thumbnailTileSize, renderAssets.waterImage);
           } else if (tile === TileType.Raft) {
             drawThumbnailRaft(ctx, col, row, thumbnailTileSize);
           } else if (tile === TileType.PressurePlate) {
