@@ -69,6 +69,7 @@ const tileKeyByType: Record<TileType, string> = {
   [TileType.Door]: 'floor',
   [TileType.Water]: 'floor',
   [TileType.Raft]: 'floor',
+  [TileType.Jetty]: 'floor',
 };
 const tileInfoByType: Record<TileType, { title: string; description: string }> = {
   [TileType.Goal]: {
@@ -86,6 +87,10 @@ const tileInfoByType: Record<TileType, { title: string; description: string }> =
   [TileType.Raft]: {
     title: 'Raft',
     description: 'A floating raft that safely carries robots across water.',
+  },
+  [TileType.Jetty]: {
+    title: 'Jetty',
+    description: 'A dock where rafts can stop and return to when idle.',
   },
   [TileType.PressurePlate]: {
     title: 'Pressure Plate',
@@ -109,6 +114,8 @@ const thumbnailDoorFill = '#1e293b';
 const thumbnailPlateFill = '#f59e0b';
 const thumbnailRaftFill = '#b45309';
 const thumbnailRaftStroke = '#7c2d12';
+const thumbnailJettyFill = '#a16207';
+const thumbnailJettyStroke = '#78350f';
 
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
@@ -199,6 +206,27 @@ const drawThumbnailRaft = (
   ctx.save();
   ctx.fillStyle = thumbnailRaftFill;
   ctx.strokeStyle = thumbnailRaftStroke;
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
+  ctx.strokeRect(
+    col * tileSize + padding,
+    row * tileSize + padding,
+    tileSize - padding * 2,
+    tileSize - padding * 2,
+  );
+  ctx.restore();
+};
+
+const drawThumbnailJetty = (
+  ctx: CanvasRenderingContext2D,
+  col: number,
+  row: number,
+  tileSize: number,
+) => {
+  const padding = tileSize * 0.16;
+  ctx.save();
+  ctx.fillStyle = thumbnailJettyFill;
+  ctx.strokeStyle = thumbnailJettyStroke;
   ctx.lineWidth = Math.max(1, tileSize * 0.08);
   ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
   ctx.strokeRect(
@@ -696,6 +724,8 @@ const App = () => {
             drawThumbnailWater(ctx, col, row, thumbnailTileSize, renderAssets.waterImage);
           } else if (tile === TileType.Raft) {
             drawThumbnailRaft(ctx, col, row, thumbnailTileSize);
+          } else if (tile === TileType.Jetty) {
+            drawThumbnailJetty(ctx, col, row, thumbnailTileSize);
           } else if (tile === TileType.PressurePlate) {
             drawThumbnailPlate(ctx, col, row, thumbnailTileSize);
           } else if (tile === TileType.Door) {
