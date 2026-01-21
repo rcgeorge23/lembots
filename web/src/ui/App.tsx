@@ -872,6 +872,7 @@ const App = () => {
     : bubbleVmState?.status === 'done'
       ? 'Program complete'
       : 'Idle';
+  const bubbleIsBelow = bubbleRobot ? bubbleRobot.y <= 1 : false;
   const bubblePosition = bubbleRobot
     ? {
         left: `${((bubbleRobot.x + 0.5) / simulation.world.width) * 100}%`,
@@ -909,7 +910,10 @@ const App = () => {
                 onPointerDown={handleCanvasPointerDown}
               />
               {robotBubbleId ? (
-                <div className="robot-bubble" style={bubblePosition}>
+                <div
+                  className={`robot-bubble${bubbleIsBelow ? ' robot-bubble--below' : ''}`}
+                  style={bubblePosition}
+                >
                   <div className="robot-bubble__header">
                     <div>
                       <p className="robot-bubble__eyebrow">Robot</p>
