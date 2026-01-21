@@ -890,6 +890,10 @@ const App = () => {
         top: `${((bubbleRobot.y + 0.2) / simulation.world.height) * 100}%`,
       }
     : { left: '50%', top: '12%' };
+  const bubbleStyle: React.CSSProperties & { '--bubble-shift'?: string } = {
+    ...bubblePosition,
+    '--bubble-shift': `${bubbleShift}px`,
+  };
 
   useLayoutEffect(() => {
     if (!robotBubbleId) {
@@ -956,10 +960,7 @@ const App = () => {
               {robotBubbleId ? (
                 <div
                   className={`robot-bubble${bubbleIsBelow ? ' robot-bubble--below' : ''}`}
-                  style={{
-                    ...bubblePosition,
-                    '--bubble-shift': `${bubbleShift}px`,
-                  }}
+                  style={bubbleStyle}
                   ref={bubbleRef}
                 >
                   <div className="robot-bubble__header">
