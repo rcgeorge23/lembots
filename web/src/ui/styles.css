@@ -1085,6 +1085,33 @@ body {
     box-shadow: -12px 0 24px rgba(2, 6, 23, 0.6);
   }
 
+  .levels__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .level-card {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .level-card__thumb {
+    min-height: 72px;
+    padding: 6px;
+  }
+
+  .level-card__placeholder {
+    height: 60px;
+  }
+
+  .level-card__number {
+    font-size: 0.7rem;
+  }
+
+  .level-card__name {
+    font-size: 0.9rem;
+  }
+
   .app--levels-open .levels-strip {
     transform: translateX(0);
   }
