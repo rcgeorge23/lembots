@@ -1389,20 +1389,6 @@ const App = () => {
         </section>
       </main>
       <div className="editor-backdrop" onClick={() => setIsEditorOpen(false)} aria-hidden />
-      <button
-        type="button"
-        className="mobile-editor-toggle"
-        onClick={() => setIsEditorOpen((isOpen) => !isOpen)}
-        aria-label="Toggle block editor"
-        aria-expanded={isEditorOpen}
-      >
-        <span className="mobile-editor-toggle__icon" aria-hidden="true">
-          🧠
-        </span>
-        <span className="mobile-editor-toggle__chevron" aria-hidden="true">
-          &laquo;&laquo;
-        </span>
-      </button>
       <div className="mobile-console" role="region" aria-label="Quick controls">
         <div className="mobile-console__info">
           <div>
@@ -1430,6 +1416,20 @@ const App = () => {
           </button>
           <button type="button" onClick={handleReset}>
             Reset
+          </button>
+          <button
+            type="button"
+            className="mobile-editor-toggle"
+            onClick={() => setIsEditorOpen((isOpen) => !isOpen)}
+            aria-label="Toggle block editor"
+            aria-expanded={isEditorOpen}
+          >
+            <span className="mobile-editor-toggle__icon" aria-hidden="true">
+              🧠
+            </span>
+            <span className="mobile-editor-toggle__chevron" aria-hidden="true">
+              &laquo;&laquo;
+            </span>
           </button>
         </div>
       </div>
