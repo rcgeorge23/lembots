@@ -634,6 +634,7 @@ const App = () => {
       lastTime = time;
       renderer.render(simulationRef.current.world, simulationRef.current, dt, {
         lastAction: currentActionRef.current,
+        robotBubbleId,
         selectedRobotId,
       });
       animationFrame = window.requestAnimationFrame(renderLoop);
@@ -644,7 +645,7 @@ const App = () => {
     return () => {
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [renderAssets]);
+  }, [renderAssets, robotBubbleId]);
 
   useEffect(() => {
     const blocklyDiv = blocklyRef.current;

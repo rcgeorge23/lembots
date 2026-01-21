@@ -145,9 +145,11 @@ export class CanvasRenderer implements Renderer {
       );
 
       const isSelected = robot.id === selectedRobotId || (!selectedRobotId && index === 0);
+      const showActionIndicator =
+        isSelected && context?.lastAction && context?.robotBubbleId !== robot.id;
       if (isSelected) {
         this.drawRobotHighlight(ctx, centerX, centerY, robot.alive, robot.reachedGoal);
-        if (context?.lastAction) {
+        if (showActionIndicator) {
           this.drawRobotIndicator(
             ctx,
             centerX,

@@ -28,6 +28,7 @@ export interface RenderAssets {
 
 export interface RenderContext {
   lastAction?: RobotAction | null;
+  robotBubbleId?: string | null;
   selectedRobotId?: string | null;
 }
 
