@@ -979,12 +979,11 @@ const App = () => {
       }
 
       const padding = 12;
-      const stageRect = stageEl.getBoundingClientRect();
       const bubbleRect = bubbleEl.getBoundingClientRect();
       const viewportLeft = padding;
       const viewportRight = window.innerWidth - padding;
-      const minLeft = Math.max(stageRect.left + padding, viewportLeft);
-      const maxRight = Math.min(stageRect.right - padding, viewportRight);
+      const minLeft = viewportLeft;
+      const maxRight = viewportRight;
       const adjustedLeft = bubbleRect.left - currentShift;
       const adjustedRight = bubbleRect.right - currentShift;
       let shift = 0;
