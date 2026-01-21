@@ -962,29 +962,34 @@ const App = () => {
   const platePressed = isPressurePlatePressed(simulation.world, simulation.robots);
   const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
 
-  const getBubbleShift = useCallback((bubbleEl: HTMLDivElement | null) => {
-    const stageEl = simStageRef.current;
-    if (!bubbleEl || !stageEl) {
-      return 0;
-    }
+  const getBubbleShift = useCallback(
+    (bubbleEl: HTMLDivElement | null, currentShift = 0) => {
+      const stageEl = simStageRef.current;
+      if (!bubbleEl || !stageEl) {
+        return 0;
+      }
 
-    const padding = 12;
-    const stageRect = stageEl.getBoundingClientRect();
-    const bubbleRect = bubbleEl.getBoundingClientRect();
-    const viewportLeft = padding;
-    const viewportRight = window.innerWidth - padding;
-    const minLeft = Math.max(stageRect.left + padding, viewportLeft);
-    const maxRight = Math.min(stageRect.right - padding, viewportRight);
-    let shift = 0;
+      const padding = 12;
+      const stageRect = stageEl.getBoundingClientRect();
+      const bubbleRect = bubbleEl.getBoundingClientRect();
+      const viewportLeft = padding;
+      const viewportRight = window.innerWidth - padding;
+      const minLeft = Math.max(stageRect.left + padding, viewportLeft);
+      const maxRight = Math.min(stageRect.right - padding, viewportRight);
+      const adjustedLeft = bubbleRect.left - currentShift;
+      const adjustedRight = bubbleRect.right - currentShift;
+      let shift = 0;
 
-    if (bubbleRect.left < minLeft) {
-      shift = minLeft - bubbleRect.left;
-    } else if (bubbleRect.right > maxRight) {
-      shift = maxRight - bubbleRect.right;
-    }
+      if (adjustedLeft < minLeft) {
+        shift = minLeft - adjustedLeft;
+      } else if (adjustedRight > maxRight) {
+        shift = maxRight - adjustedRight;
+      }
 
-    return shift;
-  }, []);
+      return shift;
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     if (!robotBubbleId) {
@@ -993,13 +998,19 @@ const App = () => {
     }
 
     const updateShift = () => {
-      setBubbleShift(getBubbleShift(bubbleRef.current));
+      setBubbleShift(getBubbleShift(bubbleRef.current, bubbleShift));
     };
 
     updateShift();
     window.addEventListener('resize', updateShift);
     return () => window.removeEventListener('resize', updateShift);
-  }, [getBubbleShift, robotBubbleId, bubblePosition.left, bubblePosition.top]);
+  }, [
+    bubblePosition.left,
+    bubblePosition.top,
+    bubbleShift,
+    getBubbleShift,
+    robotBubbleId,
+  ]);
 
   useLayoutEffect(() => {
     if (!tileBubble) {
@@ -1008,13 +1019,19 @@ const App = () => {
     }
 
     const updateShift = () => {
-      setTileBubbleShift(getBubbleShift(tileBubbleRef.current));
+      setTileBubbleShift(getBubbleShift(tileBubbleRef.current, tileBubbleShift));
     };
 
     updateShift();
     window.addEventListener('resize', updateShift);
     return () => window.removeEventListener('resize', updateShift);
-  }, [getBubbleShift, tileBubble, tileBubblePosition.left, tileBubblePosition.top]);
+  }, [
+    getBubbleShift,
+    tileBubble,
+    tileBubblePosition.left,
+    tileBubblePosition.top,
+    tileBubbleShift,
+  ]);
 
   return (
     <div
