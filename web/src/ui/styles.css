@@ -625,6 +625,10 @@ body {
   transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
 }
 
+.mobile-console__actions button.is-fast-forward {
+  --amiga-accent: #38bdf8;
+}
+
 .console__controls button:hover:not(:disabled),
 .speed-toggle button:hover:not(:disabled),
 .mobile-console__actions button:hover:not(:disabled),
