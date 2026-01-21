@@ -85,7 +85,11 @@ body {
 .app__main {
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    'sim sim'
+    'editor controls';
+  align-items: start;
 }
 
 .panel {
@@ -141,7 +145,13 @@ body {
   font-weight: 700;
 }
 
-.panel--sim canvas {
+.sim-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sim-panel canvas {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 8px;
   background: #0f172a;
@@ -172,6 +182,25 @@ body {
 .sim-stage canvas {
   width: 100%;
   height: 100%;
+}
+
+.sim-panel {
+  grid-area: sim;
+}
+
+.panel--editor {
+  grid-area: editor;
+}
+
+.panel--controls {
+  grid-area: controls;
+}
+
+@media (min-width: 901px) {
+  .sim-stage {
+    transform: rotate(90deg);
+    transform-origin: center;
+  }
 }
 
 .sim-overlay {
@@ -947,23 +976,19 @@ body {
 
   .app__main {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'sim'
+      'editor'
+      'controls';
     flex: 1;
   }
 
-  .panel--sim {
+  .sim-panel {
     min-height: 72vh;
     padding: 0;
     background: transparent;
     border: none;
     box-shadow: none;
-  }
-
-  .panel--sim::after {
-    display: none;
-  }
-
-  .panel--sim h2 {
-    display: none;
   }
 
   .panel--controls {
