@@ -3,6 +3,7 @@ import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
 import { createVm, stepVm, type VmState } from '../blocks/vm';
+import type { ProgramNode } from '../blocks/types';
 import type { Direction, RobotAction } from '../engine/robot';
 import {
   createSimulation,
@@ -224,7 +225,7 @@ const App = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayIndex, setReplayIndex] = useState(0);
-  const [lastRunActions, setLastRunActions] = useState<RobotAction[]>([]);
+  const [lastRunActions, setLastRunActions] = useState<Array<Array<RobotAction | undefined>>>([]);
   const [actionTrace, setActionTrace] = useState<RobotAction[]>([]);
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
   const [speedMs, setSpeedMs] = useState(1000);
@@ -243,10 +244,11 @@ const App = () => {
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
   const simulationRef = useRef(simulation);
-  const vmRef = useRef(vmState);
+  const vmStatesRef = useRef<Map<string, VmState>>(new Map());
   const traceRef = useRef<RobotAction[]>([]);
+  const runActionsRef = useRef<Array<Array<RobotAction | undefined>>>([]);
   const replayIndexRef = useRef(0);
-  const lastRunRef = useRef<RobotAction[]>([]);
+  const lastRunRef = useRef<Array<Array<RobotAction | undefined>>>([]);
   const currentActionRef = useRef<RobotAction | null>(null);
 
   const loadLevel = useCallback(
@@ -266,7 +268,9 @@ const App = () => {
       setActionTrace([]);
       setCurrentAction(null);
       setFailReason(null);
+      vmStatesRef.current = new Map();
       traceRef.current = [];
+      runActionsRef.current = [];
       replayIndexRef.current = 0;
     },
     [createSimulationForLevel],
@@ -285,8 +289,13 @@ const App = () => {
   }, [selectedRobotId, simulation.robots]);
 
   useEffect(() => {
-    vmRef.current = vmState;
-  }, [vmState]);
+    if (!selectedRobotId) {
+      const fallbackId = simulation.robots[0]?.id ?? null;
+      setVmState(fallbackId ? vmStatesRef.current.get(fallbackId) ?? null : null);
+      return;
+    }
+    setVmState(vmStatesRef.current.get(selectedRobotId) ?? null);
+  }, [selectedRobotId, simulation.robots]);
 
   useEffect(() => {
     traceRef.current = actionTrace;
@@ -331,13 +340,12 @@ const App = () => {
     }
   }, [completedLevelSet, isReplaying, levelIndex, simulation.status]);
 
-  const compileProgram = (): VmState | null => {
+  const compileProgram = (): ProgramNode | null => {
     const workspace = workspaceRef.current;
     if (!workspace) {
       return null;
     }
-    const program = compileWorkspace(workspace);
-    return createVm(program);
+    return compileWorkspace(workspace);
   };
 
   const performStep = () => {
@@ -347,52 +355,84 @@ const App = () => {
       return;
     }
 
-    let currentVm = vmRef.current;
-    if (!currentVm || currentVm.status !== 'running') {
-      currentVm = compileProgram();
-    }
-
-    if (!currentVm) {
+    const program = compileProgram();
+    if (!program) {
       setIsRunning(false);
       return;
     }
 
-    const primaryRobot = currentSimulation.robots[0];
-    if (!primaryRobot) {
+    if (currentSimulation.robots.length === 0) {
       setIsRunning(false);
       return;
     }
 
-    const vmResult = stepVm(currentVm, {
-      world: currentSimulation.world,
-      robot: primaryRobot,
-      exits: currentSimulation.exits,
-      globalSignal: currentSimulation.globalSignal,
+    const vmStates = new Map(vmStatesRef.current);
+    const actions: Array<RobotAction | undefined> = [];
+    const actionsByRobot = new Map<string, RobotAction>();
+    let sawStepLimit = false;
+
+    currentSimulation.robots.forEach((robot) => {
+      let robotVm = vmStates.get(robot.id);
+      if (!robotVm) {
+        robotVm = createVm(program);
+        vmStates.set(robot.id, robotVm);
+      }
+
+      if (!robot.alive || robot.reachedGoal || robotVm.status !== 'running') {
+        actions.push(undefined);
+        return;
+      }
+
+      const vmResult = stepVm(robotVm, {
+        world: currentSimulation.world,
+        robot,
+        exits: currentSimulation.exits,
+        globalSignal: currentSimulation.globalSignal,
+      });
+      vmStates.set(robot.id, vmResult.state);
+      if (vmResult.action) {
+        actionsByRobot.set(robot.id, vmResult.action);
+        actions.push(vmResult.action);
+      } else {
+        actions.push(undefined);
+      }
+
+      if (vmResult.state.status === 'step_limit') {
+        sawStepLimit = true;
+      }
     });
 
+    vmStatesRef.current = vmStates;
+    const selectedId = selectedRobotId ?? currentSimulation.robots[0]?.id ?? null;
+    const selectedVm = selectedId ? vmStates.get(selectedId) ?? null : null;
+    setVmState(selectedVm);
+
     let nextSimulation = currentSimulation;
-    if (vmResult.action) {
-      nextSimulation = stepSimulation(currentSimulation, [vmResult.action]);
+    if (actions.some((action) => action)) {
+      nextSimulation = stepSimulation(currentSimulation, actions);
+      runActionsRef.current = [...runActionsRef.current, actions];
     }
 
-    if (vmResult.state.status === 'step_limit') {
+    if (sawStepLimit) {
       nextSimulation = { ...nextSimulation, status: 'lost' };
     }
 
     let updatedTrace = traceRef.current;
-    if (vmResult.action) {
-      updatedTrace = [...traceRef.current, vmResult.action];
+    const selectedAction =
+      (selectedId ? actionsByRobot.get(selectedId) : undefined) ??
+      actionsByRobot.get(currentSimulation.robots[0]?.id ?? '');
+    if (selectedAction) {
+      updatedTrace = [...traceRef.current, selectedAction];
       traceRef.current = updatedTrace;
       setActionTrace(updatedTrace);
-      setCurrentAction(vmResult.action);
+      setCurrentAction(selectedAction);
     }
 
     setSimulation(nextSimulation);
-    setVmState(vmResult.state);
 
     if (nextSimulation.status === 'lost') {
       const reachedLimit =
-        vmResult.state.status === 'step_limit' ||
+        sawStepLimit ||
         nextSimulation.stepCount >= nextSimulation.maxSteps;
       const savedCount = nextSimulation.robots.filter((robot) => robot.reachedGoal).length;
       const hasActiveRobot = nextSimulation.robots.some(
@@ -419,11 +459,12 @@ const App = () => {
 
     if (
       nextSimulation.status !== 'running' ||
-      vmResult.state.status !== 'running'
+      vmStatesRef.current.size === 0 ||
+      Array.from(vmStatesRef.current.values()).every((state) => state.status !== 'running')
     ) {
       setIsRunning(false);
-      if (updatedTrace.length > 0) {
-        setLastRunActions(updatedTrace);
+      if (runActionsRef.current.length > 0) {
+        setLastRunActions([...runActionsRef.current]);
       }
     }
   };
@@ -452,7 +493,9 @@ const App = () => {
     setActionTrace([]);
     setCurrentAction(null);
     setFailReason(null);
+    vmStatesRef.current = new Map();
     traceRef.current = [];
+    runActionsRef.current = [];
   };
 
   const handleReplay = () => {
@@ -468,6 +511,7 @@ const App = () => {
     setActionTrace([]);
     setCurrentAction(null);
     setFailReason(null);
+    vmStatesRef.current = new Map();
     traceRef.current = [];
   };
 
@@ -652,20 +696,28 @@ const App = () => {
 
     const interval = window.setInterval(() => {
       const index = replayIndexRef.current;
-      const action = lastRunRef.current[index];
-      if (!action) {
+      const actionSet = lastRunRef.current[index];
+      if (!actionSet) {
         setIsReplaying(false);
         return;
       }
 
       const currentSimulation = simulationRef.current;
-      const nextSimulation = stepSimulation(currentSimulation, [action]);
+      const nextSimulation = stepSimulation(currentSimulation, actionSet);
       setSimulation(nextSimulation);
 
-      const updatedTrace = [...traceRef.current, action];
-      traceRef.current = updatedTrace;
-      setActionTrace(updatedTrace);
-      setCurrentAction(action);
+      const selectedId = selectedRobotId ?? currentSimulation.robots[0]?.id ?? null;
+      const selectedIndex = selectedId
+        ? currentSimulation.robots.findIndex((robot) => robot.id === selectedId)
+        : -1;
+      const selectedAction =
+        (selectedIndex >= 0 ? actionSet[selectedIndex] : undefined) ?? actionSet[0];
+      if (selectedAction) {
+        const updatedTrace = [...traceRef.current, selectedAction];
+        traceRef.current = updatedTrace;
+        setActionTrace(updatedTrace);
+        setCurrentAction(selectedAction);
+      }
 
       const nextIndex = index + 1;
       setReplayIndex(nextIndex);
@@ -677,7 +729,7 @@ const App = () => {
     }, speedMs);
 
     return () => window.clearInterval(interval);
-  }, [isReplaying, speedMs]);
+  }, [isReplaying, selectedRobotId, speedMs]);
 
   useEffect(() => {
     if (!traceLogRef.current) {

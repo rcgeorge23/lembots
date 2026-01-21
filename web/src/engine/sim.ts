@@ -166,7 +166,7 @@ const spawnNextRobot = (
 
 export const stepSimulation = (
   state: SimulationState,
-  actions: RobotAction[],
+  actions: Array<RobotAction | undefined>,
 ): SimulationState => {
   if (state.status !== 'running') {
     return state;
