@@ -221,8 +221,8 @@ body {
 .robot-bubble {
   position: absolute;
   z-index: 3;
-  min-width: 220px;
-  max-width: 260px;
+  min-width: min(220px, calc(100vw - 32px));
+  max-width: min(260px, calc(100vw - 32px));
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 14px;
