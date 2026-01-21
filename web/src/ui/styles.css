@@ -950,9 +950,9 @@ body {
 
 @media (max-width: 900px) {
   .app {
-    padding: 12px 12px 96px;
+    padding: 6px 12px 96px;
     min-height: 100vh;
-    gap: 14px;
+    gap: 12px;
   }
 
   .app__header {
