@@ -46,11 +46,13 @@ import level18 from '../levels/builtin/level-18.json';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
+const defaultSpeedMs = 500;
+const fastForwardSpeedMs = defaultSpeedMs / 2;
 const speedOptions = [
   { label: '0.5x', value: 2000 },
   { label: '1x', value: 1000 },
-  { label: '2x', value: 500 },
-  { label: '4x', value: 250 },
+  { label: '2x', value: defaultSpeedMs },
+  { label: '4x', value: fastForwardSpeedMs },
 ];
 const actionLabels: Record<RobotAction, string> = {
   MOVE_FORWARD: 'Move Forward',
@@ -263,7 +265,7 @@ const App = () => {
   const [lastRunActions, setLastRunActions] = useState<Array<Array<RobotAction | undefined>>>([]);
   const [actionTrace, setActionTrace] = useState<RobotAction[]>([]);
   const [currentAction, setCurrentAction] = useState<RobotAction | null>(null);
-  const [speedMs, setSpeedMs] = useState(1000);
+  const [speedMs, setSpeedMs] = useState(defaultSpeedMs);
   const [completedLevels, setCompletedLevels] = useState<string[]>(() => loadCompletedLevels());
   const [unlockAllLevels, setUnlockAllLevels] = useState(false);
   const [renderAssets, setRenderAssets] = useState<RenderAssets | null>(null);
@@ -544,6 +546,12 @@ const App = () => {
 
   const handleStep = () => {
     performStep();
+  };
+
+  const handleFastForward = () => {
+    setSpeedMs((currentSpeed) =>
+      currentSpeed === fastForwardSpeedMs ? defaultSpeedMs : fastForwardSpeedMs,
+    );
   };
 
   const handlePause = () => {
@@ -859,6 +867,7 @@ const App = () => {
   const currentLevel = levels[levelIndex];
   const hasNextLevel = levelIndex + 1 < levels.length;
   const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
+  const isFastForward = speedMs === fastForwardSpeedMs;
   const showOverlay = (simulation.status === 'won' || simulation.status === 'lost') && !isReplaying;
   const failMessage =
     failReason === 'hazard'
@@ -1452,11 +1461,18 @@ const App = () => {
             </span>
             <span className="sr-only">{isReplaying ? 'Stop replay' : 'Pause'}</span>
           </button>
-          <button type="button" onClick={handleStep} disabled={isBusy} aria-label="Step">
+          <button
+            type="button"
+            onClick={handleFastForward}
+            disabled={isReplaying}
+            aria-label="Fast forward"
+            aria-pressed={isFastForward}
+            className={isFastForward ? 'is-fast-forward' : undefined}
+          >
             <span className="mobile-console__icon" aria-hidden="true">
-              ⏭
+              ⏩
             </span>
-            <span className="sr-only">Step</span>
+            <span className="sr-only">Fast forward</span>
           </button>
           <button type="button" onClick={handleReset} aria-label="Reset">
             <span className="mobile-console__icon" aria-hidden="true">
