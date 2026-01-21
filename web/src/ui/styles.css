@@ -228,6 +228,10 @@ body {
   transform: translate(-50%, -110%);
 }
 
+.robot-bubble--below {
+  transform: translate(-50%, 14%);
+}
+
 .robot-bubble::after {
   content: '';
   position: absolute;
@@ -239,6 +243,15 @@ body {
   border-right: 1px solid rgba(148, 163, 184, 0.4);
   border-bottom: 1px solid rgba(148, 163, 184, 0.4);
   transform: translateX(-50%) rotate(45deg);
+}
+
+.robot-bubble--below::after {
+  top: -8px;
+  bottom: auto;
+  border-right: none;
+  border-bottom: none;
+  border-left: 1px solid rgba(148, 163, 184, 0.4);
+  border-top: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .robot-bubble__header {
