@@ -783,6 +783,9 @@ const App = () => {
               ref={canvasRef}
               width={simulation.world.width * TILE_SIZE}
               height={simulation.world.height * TILE_SIZE}
+              style={{
+                aspectRatio: `${simulation.world.width} / ${simulation.world.height}`,
+              }}
             />
             {showOverlay ? (
               <div className={`sim-overlay sim-overlay--${simulation.status}`}>
