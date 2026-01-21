@@ -35,14 +35,6 @@ import level07 from '../levels/builtin/level-07.json';
 import level08 from '../levels/builtin/level-08.json';
 import level09 from '../levels/builtin/level-09.json';
 import level10 from '../levels/builtin/level-10.json';
-import level11 from '../levels/builtin/level-11.json';
-import level12 from '../levels/builtin/level-12.json';
-import level13 from '../levels/builtin/level-13.json';
-import level14 from '../levels/builtin/level-14.json';
-import level15 from '../levels/builtin/level-15.json';
-import level16 from '../levels/builtin/level-16.json';
-import level17 from '../levels/builtin/level-17.json';
-import level18 from '../levels/builtin/level-18.json';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
@@ -75,6 +67,8 @@ const tileKeyByType: Record<TileType, string> = {
   [TileType.Hazard]: 'hazard',
   [TileType.PressurePlate]: 'floor',
   [TileType.Door]: 'floor',
+  [TileType.Water]: 'floor',
+  [TileType.Raft]: 'floor',
 };
 const tileInfoByType: Record<TileType, { title: string; description: string }> = {
   [TileType.Goal]: {
@@ -84,6 +78,14 @@ const tileInfoByType: Record<TileType, { title: string; description: string }> =
   [TileType.Hazard]: {
     title: 'Hazard',
     description: 'Hazards destroy any robot that moves onto them.',
+  },
+  [TileType.Water]: {
+    title: 'Water',
+    description: 'Robots sink if they step into the water.',
+  },
+  [TileType.Raft]: {
+    title: 'Raft',
+    description: 'A floating raft that safely carries robots across water.',
   },
   [TileType.PressurePlate]: {
     title: 'Pressure Plate',
@@ -105,6 +107,10 @@ const tileInfoByType: Record<TileType, { title: string; description: string }> =
 const thumbnailTileSize = 12;
 const thumbnailDoorFill = '#1e293b';
 const thumbnailPlateFill = '#f59e0b';
+const thumbnailWaterFill = '#38bdf8';
+const thumbnailWaterStroke = '#0ea5e9';
+const thumbnailRaftFill = '#b45309';
+const thumbnailRaftStroke = '#7c2d12';
 
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
@@ -166,6 +172,48 @@ const drawThumbnailDoor = (
   ctx.restore();
 };
 
+const drawThumbnailWater = (
+  ctx: CanvasRenderingContext2D,
+  col: number,
+  row: number,
+  tileSize: number,
+) => {
+  const padding = tileSize * 0.1;
+  ctx.save();
+  ctx.fillStyle = thumbnailWaterFill;
+  ctx.strokeStyle = thumbnailWaterStroke;
+  ctx.lineWidth = Math.max(1, tileSize * 0.06);
+  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
+  ctx.strokeRect(
+    col * tileSize + padding,
+    row * tileSize + padding,
+    tileSize - padding * 2,
+    tileSize - padding * 2,
+  );
+  ctx.restore();
+};
+
+const drawThumbnailRaft = (
+  ctx: CanvasRenderingContext2D,
+  col: number,
+  row: number,
+  tileSize: number,
+) => {
+  const padding = tileSize * 0.16;
+  ctx.save();
+  ctx.fillStyle = thumbnailRaftFill;
+  ctx.strokeStyle = thumbnailRaftStroke;
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.fillRect(col * tileSize + padding, row * tileSize + padding, tileSize - padding * 2, tileSize - padding * 2);
+  ctx.strokeRect(
+    col * tileSize + padding,
+    row * tileSize + padding,
+    tileSize - padding * 2,
+    tileSize - padding * 2,
+  );
+  ctx.restore();
+};
+
 interface LevelDefinition {
   id: string;
   name: string;
@@ -190,14 +238,6 @@ const levels: LevelDefinition[] = [
   level08,
   level09,
   level10,
-  level11,
-  level12,
-  level13,
-  level14,
-  level15,
-  level16,
-  level17,
-  level18,
 ];
 
 const loadCompletedLevels = (): string[] => {
@@ -656,7 +696,11 @@ const App = () => {
       for (let row = 0; row < world.height; row += 1) {
         for (let col = 0; col < world.width; col += 1) {
           const tile = world.grid[row][col];
-          if (tile === TileType.PressurePlate) {
+          if (tile === TileType.Water) {
+            drawThumbnailWater(ctx, col, row, thumbnailTileSize);
+          } else if (tile === TileType.Raft) {
+            drawThumbnailRaft(ctx, col, row, thumbnailTileSize);
+          } else if (tile === TileType.PressurePlate) {
             drawThumbnailPlate(ctx, col, row, thumbnailTileSize);
           } else if (tile === TileType.Door) {
             drawThumbnailDoor(ctx, col, row, thumbnailTileSize);
