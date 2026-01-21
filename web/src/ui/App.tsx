@@ -376,9 +376,6 @@ const App = () => {
       if (!robotVm) {
         robotVm = createVm(program);
         vmStates.set(robot.id, robotVm);
-      } else if (robotVm.status === 'done' && robot.alive && !robot.reachedGoal) {
-        robotVm = createVm(program);
-        vmStates.set(robot.id, robotVm);
       }
 
       if (!robot.alive || robot.reachedGoal || robotVm.status !== 'running') {
@@ -475,6 +472,20 @@ const App = () => {
   const handleRun = () => {
     if (simulation.status !== 'running') {
       return;
+    }
+    if (!isRunning && !isReplaying) {
+      const vmStates = vmStatesRef.current;
+      const allStopped =
+        vmStates.size > 0 &&
+        Array.from(vmStates.values()).every((state) => state.status !== 'running');
+      if (allStopped) {
+        vmStatesRef.current = new Map();
+        runActionsRef.current = [];
+        traceRef.current = [];
+        setActionTrace([]);
+        setCurrentAction(null);
+        setVmState(null);
+      }
     }
     setIsRunning(true);
   };
