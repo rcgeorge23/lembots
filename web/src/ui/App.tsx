@@ -960,6 +960,30 @@ const App = () => {
   const platePressed = isPressurePlatePressed(simulation.world, simulation.robots);
   const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
 
+  const getBubbleShift = useCallback((bubbleEl: HTMLDivElement | null) => {
+    const stageEl = simStageRef.current;
+    if (!bubbleEl || !stageEl) {
+      return 0;
+    }
+
+    const padding = 12;
+    const stageRect = stageEl.getBoundingClientRect();
+    const bubbleRect = bubbleEl.getBoundingClientRect();
+    const viewportLeft = padding;
+    const viewportRight = window.innerWidth - padding;
+    const minLeft = Math.max(stageRect.left + padding, viewportLeft);
+    const maxRight = Math.min(stageRect.right - padding, viewportRight);
+    let shift = 0;
+
+    if (bubbleRect.left < minLeft) {
+      shift = minLeft - bubbleRect.left;
+    } else if (bubbleRect.right > maxRight) {
+      shift = maxRight - bubbleRect.right;
+    }
+
+    return shift;
+  }, []);
+
   useLayoutEffect(() => {
     if (!robotBubbleId) {
       setBubbleShift(0);
@@ -967,30 +991,13 @@ const App = () => {
     }
 
     const updateShift = () => {
-      const bubbleEl = bubbleRef.current;
-      const stageEl = simStageRef.current;
-      if (!bubbleEl || !stageEl) {
-        return;
-      }
-
-      const padding = 12;
-      const stageRect = stageEl.getBoundingClientRect();
-      const bubbleRect = bubbleEl.getBoundingClientRect();
-      let shift = 0;
-
-      if (bubbleRect.left < stageRect.left + padding) {
-        shift = stageRect.left + padding - bubbleRect.left;
-      } else if (bubbleRect.right > stageRect.right - padding) {
-        shift = stageRect.right - padding - bubbleRect.right;
-      }
-
-      setBubbleShift(shift);
+      setBubbleShift(getBubbleShift(bubbleRef.current));
     };
 
     updateShift();
     window.addEventListener('resize', updateShift);
     return () => window.removeEventListener('resize', updateShift);
-  }, [robotBubbleId, bubblePosition.left, bubblePosition.top]);
+  }, [getBubbleShift, robotBubbleId, bubblePosition.left, bubblePosition.top]);
 
   useLayoutEffect(() => {
     if (!tileBubble) {
@@ -999,30 +1006,13 @@ const App = () => {
     }
 
     const updateShift = () => {
-      const bubbleEl = tileBubbleRef.current;
-      const stageEl = simStageRef.current;
-      if (!bubbleEl || !stageEl) {
-        return;
-      }
-
-      const padding = 12;
-      const stageRect = stageEl.getBoundingClientRect();
-      const bubbleRect = bubbleEl.getBoundingClientRect();
-      let shift = 0;
-
-      if (bubbleRect.left < stageRect.left + padding) {
-        shift = stageRect.left + padding - bubbleRect.left;
-      } else if (bubbleRect.right > stageRect.right - padding) {
-        shift = stageRect.right - padding - bubbleRect.right;
-      }
-
-      setTileBubbleShift(shift);
+      setTileBubbleShift(getBubbleShift(tileBubbleRef.current));
     };
 
     updateShift();
     window.addEventListener('resize', updateShift);
     return () => window.removeEventListener('resize', updateShift);
-  }, [tileBubble, tileBubblePosition.left, tileBubblePosition.top]);
+  }, [getBubbleShift, tileBubble, tileBubblePosition.left, tileBubblePosition.top]);
 
   return (
     <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
