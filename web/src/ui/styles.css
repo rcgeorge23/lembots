@@ -225,11 +225,11 @@ body {
   padding: 12px 14px 14px;
   box-shadow: 0 16px 24px rgba(2, 6, 23, 0.55);
   color: var(--panel-highlight);
-  transform: translate(-50%, -110%);
+  transform: translate(calc(-50% + var(--bubble-shift, 0px)), -110%);
 }
 
 .robot-bubble--below {
-  transform: translate(-50%, 14%);
+  transform: translate(calc(-50% + var(--bubble-shift, 0px)), 14%);
 }
 
 .robot-bubble::after {

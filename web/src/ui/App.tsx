@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+} from 'react';
 import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
@@ -241,6 +249,7 @@ const App = () => {
     () => simulation.robots[0]?.id ?? null,
   );
   const [robotBubbleId, setRobotBubbleId] = useState<string | null>(null);
+  const [bubbleShift, setBubbleShift] = useState(0);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -251,6 +260,8 @@ const App = () => {
   const replayIndexRef = useRef(0);
   const lastRunRef = useRef<Array<Array<RobotAction | undefined>>>([]);
   const currentActionRef = useRef<RobotAction | null>(null);
+  const simStageRef = useRef<HTMLDivElement | null>(null);
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
 
   const loadLevel = useCallback(
     (nextIndex: number) => {
@@ -880,6 +891,38 @@ const App = () => {
       }
     : { left: '50%', top: '12%' };
 
+  useLayoutEffect(() => {
+    if (!robotBubbleId) {
+      setBubbleShift(0);
+      return;
+    }
+
+    const updateShift = () => {
+      const bubbleEl = bubbleRef.current;
+      const stageEl = simStageRef.current;
+      if (!bubbleEl || !stageEl) {
+        return;
+      }
+
+      const padding = 12;
+      const stageRect = stageEl.getBoundingClientRect();
+      const bubbleRect = bubbleEl.getBoundingClientRect();
+      let shift = 0;
+
+      if (bubbleRect.left < stageRect.left + padding) {
+        shift = stageRect.left + padding - bubbleRect.left;
+      } else if (bubbleRect.right > stageRect.right - padding) {
+        shift = stageRect.right - padding - bubbleRect.right;
+      }
+
+      setBubbleShift(shift);
+    };
+
+    updateShift();
+    window.addEventListener('resize', updateShift);
+    return () => window.removeEventListener('resize', updateShift);
+  }, [robotBubbleId, bubblePosition.left, bubblePosition.top]);
+
   return (
     <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
       <header className="app__header">
@@ -902,6 +945,7 @@ const App = () => {
               style={{
                 aspectRatio: `${simulation.world.width} / ${simulation.world.height}`,
               }}
+              ref={simStageRef}
             >
               <canvas
                 ref={canvasRef}
@@ -912,7 +956,11 @@ const App = () => {
               {robotBubbleId ? (
                 <div
                   className={`robot-bubble${bubbleIsBelow ? ' robot-bubble--below' : ''}`}
-                  style={bubblePosition}
+                  style={{
+                    ...bubblePosition,
+                    '--bubble-shift': `${bubbleShift}px`,
+                  }}
+                  ref={bubbleRef}
                 >
                   <div className="robot-bubble__header">
                     <div>
