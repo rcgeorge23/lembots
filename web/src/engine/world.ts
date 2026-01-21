@@ -7,6 +7,7 @@ export enum TileType {
   Door = 5,
   Water = 6,
   Raft = 7,
+  Jetty = 8,
 }
 
 export interface World {
@@ -49,6 +50,9 @@ export const isWater = (world: World, x: number, y: number): boolean =>
 
 export const isRaft = (world: World, x: number, y: number): boolean =>
   getTile(world, x, y) === TileType.Raft;
+
+export const isJetty = (world: World, x: number, y: number): boolean =>
+  getTile(world, x, y) === TileType.Jetty;
 
 export const isPressurePlate = (world: World, x: number, y: number): boolean =>
   getTile(world, x, y) === TileType.PressurePlate;

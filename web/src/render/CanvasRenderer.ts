@@ -13,6 +13,7 @@ const tileMapping: Record<TileType, string> = {
   [TileType.Door]: 'floor',
   [TileType.Water]: 'floor',
   [TileType.Raft]: 'floor',
+  [TileType.Jetty]: 'floor',
 };
 
 type RobotAnim = 'idle' | 'walk' | 'turn' | 'bump' | 'win' | 'fail';
@@ -109,6 +110,8 @@ export class CanvasRenderer implements Renderer {
           this.drawWaterTile(col, row);
         } else if (world.grid[row][col] === TileType.Raft) {
           this.drawRaftTile(col, row);
+        } else if (world.grid[row][col] === TileType.Jetty) {
+          this.drawJettyTile(col, row);
         } else if (isPressurePlate(world, col, row)) {
           this.drawPressurePlate(col, row, pressedPlates.has(`${col},${row}`));
         } else if (isDoor(world, col, row)) {
@@ -234,6 +237,23 @@ export class CanvasRenderer implements Renderer {
       size,
       size,
     );
+    this.ctx.restore();
+  }
+
+  private drawJettyTile(col: number, row: number) {
+    if (!this.ctx) {
+      return;
+    }
+    const padding = this.tileSize * 0.12;
+    const x = col * this.tileSize + padding;
+    const y = row * this.tileSize + padding;
+    const size = this.tileSize - padding * 2;
+    this.ctx.save();
+    this.ctx.fillStyle = '#a16207';
+    this.ctx.strokeStyle = '#78350f';
+    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.08);
+    this.ctx.fillRect(x, y, size, size);
+    this.ctx.strokeRect(x, y, size, size);
     this.ctx.restore();
   }
 
