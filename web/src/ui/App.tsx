@@ -376,6 +376,9 @@ const App = () => {
       if (!robotVm) {
         robotVm = createVm(program);
         vmStates.set(robot.id, robotVm);
+      } else if (robotVm.status === 'done' && robot.alive && !robot.reachedGoal) {
+        robotVm = createVm(program);
+        vmStates.set(robot.id, robotVm);
       }
 
       if (!robot.alive || robot.reachedGoal || robotVm.status !== 'running') {
