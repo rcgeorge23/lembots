@@ -1482,9 +1482,6 @@ const App = () => {
             <span className="mobile-editor-toggle__icon" aria-hidden="true">
               🧠
             </span>
-            <span className="mobile-editor-toggle__chevron" aria-hidden="true">
-              &laquo;&laquo;
-            </span>
           </button>
           <button
             type="button"
@@ -1502,9 +1499,9 @@ const App = () => {
             aria-expanded={isLevelsOpen}
           >
             <span className="mobile-levels-toggle__icon" aria-hidden="true">
-              🧭
+              🧱
             </span>
-            Levels
+            <span className="sr-only">Levels</span>
           </button>
         </div>
       </div>
