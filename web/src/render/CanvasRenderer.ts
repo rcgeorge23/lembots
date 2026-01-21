@@ -11,6 +11,8 @@ const tileMapping: Record<TileType, string> = {
   [TileType.Hazard]: 'hazard',
   [TileType.PressurePlate]: 'floor',
   [TileType.Door]: 'floor',
+  [TileType.Water]: 'floor',
+  [TileType.Raft]: 'floor',
 };
 
 type RobotAnim = 'idle' | 'walk' | 'turn' | 'bump' | 'win' | 'fail';
@@ -103,7 +105,11 @@ export class CanvasRenderer implements Renderer {
     const doorOpen = isDoorOpen(world, simulation.robots, simulation.doorUnlocked);
     for (let row = 0; row < world.height; row += 1) {
       for (let col = 0; col < world.width; col += 1) {
-        if (isPressurePlate(world, col, row)) {
+        if (world.grid[row][col] === TileType.Water) {
+          this.drawWaterTile(col, row);
+        } else if (world.grid[row][col] === TileType.Raft) {
+          this.drawRaftTile(col, row);
+        } else if (isPressurePlate(world, col, row)) {
           this.drawPressurePlate(col, row, pressedPlates.has(`${col},${row}`));
         } else if (isDoor(world, col, row)) {
           this.drawDoor(col, row, doorOpen);
@@ -263,6 +269,54 @@ export class CanvasRenderer implements Renderer {
       );
       this.ctx.stroke();
     }
+    this.ctx.restore();
+  }
+
+  private drawWaterTile(col: number, row: number) {
+    if (!this.ctx) {
+      return;
+    }
+    const padding = this.tileSize * 0.08;
+    this.ctx.save();
+    this.ctx.fillStyle = '#38bdf8';
+    this.ctx.strokeStyle = '#0ea5e9';
+    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.06);
+    this.ctx.fillRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
+    this.ctx.strokeRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
+    this.ctx.restore();
+  }
+
+  private drawRaftTile(col: number, row: number) {
+    if (!this.ctx) {
+      return;
+    }
+    const padding = this.tileSize * 0.14;
+    this.ctx.save();
+    this.ctx.fillStyle = '#b45309';
+    this.ctx.strokeStyle = '#7c2d12';
+    this.ctx.lineWidth = Math.max(1, this.tileSize * 0.08);
+    this.ctx.fillRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
+    this.ctx.strokeRect(
+      col * this.tileSize + padding,
+      row * this.tileSize + padding,
+      this.tileSize - padding * 2,
+      this.tileSize - padding * 2,
+    );
     this.ctx.restore();
   }
 
