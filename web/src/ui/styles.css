@@ -655,6 +655,18 @@ body {
   cursor: not-allowed;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .console__controls button:nth-child(1) {
   --amiga-accent: #22c55e;
 }
@@ -1146,6 +1158,11 @@ body {
   .mobile-console__actions button {
     font-size: 0.75rem;
     padding: 8px 6px;
+  }
+
+  .mobile-console__icon {
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .mobile-console__actions button:disabled {

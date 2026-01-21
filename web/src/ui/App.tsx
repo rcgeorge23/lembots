@@ -1418,17 +1418,34 @@ const App = () => {
           </div>
         </div>
         <div className="mobile-console__actions">
-          <button type="button" onClick={handleRun} disabled={isBusy}>
-            Run
+          <button type="button" onClick={handleRun} disabled={isBusy} aria-label="Run">
+            <span className="mobile-console__icon" aria-hidden="true">
+              ▶
+            </span>
+            <span className="sr-only">Run</span>
           </button>
-          <button type="button" onClick={handlePause} disabled={!isBusy}>
-            {isReplaying ? 'Stop' : 'Pause'}
+          <button
+            type="button"
+            onClick={handlePause}
+            disabled={!isBusy}
+            aria-label={isReplaying ? 'Stop replay' : 'Pause'}
+          >
+            <span className="mobile-console__icon" aria-hidden="true">
+              {isReplaying ? '■' : '❚❚'}
+            </span>
+            <span className="sr-only">{isReplaying ? 'Stop replay' : 'Pause'}</span>
           </button>
-          <button type="button" onClick={handleStep} disabled={isBusy}>
-            Step
+          <button type="button" onClick={handleStep} disabled={isBusy} aria-label="Step">
+            <span className="mobile-console__icon" aria-hidden="true">
+              ⏭
+            </span>
+            <span className="sr-only">Step</span>
           </button>
-          <button type="button" onClick={handleReset}>
-            Reset
+          <button type="button" onClick={handleReset} aria-label="Reset">
+            <span className="mobile-console__icon" aria-hidden="true">
+              ↺
+            </span>
+            <span className="sr-only">Reset</span>
           </button>
           <button
             type="button"
