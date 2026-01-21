@@ -16,11 +16,12 @@ import type { Direction, RobotAction } from '../engine/robot';
 import {
   createSimulation,
   isDoorOpen,
+  isPressurePlatePressed,
   stepSimulation,
   type SimulationState,
   type Spawner,
 } from '../engine/sim';
-import { TileType, createWorld } from '../engine/world';
+import { TileType, createWorld, getTile } from '../engine/world';
 import { CanvasRenderer } from '../render/CanvasRenderer';
 import { loadRenderAssets } from '../render/assets';
 import type { RenderAssets } from '../render/Renderer';
@@ -72,6 +73,32 @@ const tileKeyByType: Record<TileType, string> = {
   [TileType.Hazard]: 'hazard',
   [TileType.PressurePlate]: 'floor',
   [TileType.Door]: 'floor',
+};
+const tileInfoByType: Record<TileType, { title: string; description: string }> = {
+  [TileType.Goal]: {
+    title: 'Goal Beacon',
+    description: 'Robots that reach this tile are saved and count toward the quota.',
+  },
+  [TileType.Hazard]: {
+    title: 'Hazard',
+    description: 'Hazards destroy any robot that moves onto them.',
+  },
+  [TileType.PressurePlate]: {
+    title: 'Pressure Plate',
+    description: 'Activates connected doors while a robot is standing on it.',
+  },
+  [TileType.Door]: {
+    title: 'Door',
+    description: 'Blocks the path unless powered by an active pressure plate.',
+  },
+  [TileType.Empty]: {
+    title: 'Floor',
+    description: 'Open floor tile.',
+  },
+  [TileType.Wall]: {
+    title: 'Wall',
+    description: 'Impassable wall tile.',
+  },
 };
 const thumbnailTileSize = 12;
 const thumbnailDoorFill = '#1e293b';
@@ -250,6 +277,12 @@ const App = () => {
   );
   const [robotBubbleId, setRobotBubbleId] = useState<string | null>(null);
   const [bubbleShift, setBubbleShift] = useState(0);
+  const [tileBubble, setTileBubble] = useState<{
+    x: number;
+    y: number;
+    type: TileType;
+  } | null>(null);
+  const [tileBubbleShift, setTileBubbleShift] = useState(0);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -262,6 +295,7 @@ const App = () => {
   const currentActionRef = useRef<RobotAction | null>(null);
   const simStageRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
+  const tileBubbleRef = useRef<HTMLDivElement | null>(null);
 
   const loadLevel = useCallback(
     (nextIndex: number) => {
@@ -280,6 +314,10 @@ const App = () => {
       setActionTrace([]);
       setCurrentAction(null);
       setFailReason(null);
+      setRobotBubbleId(null);
+      setTileBubble(null);
+      setBubbleShift(0);
+      setTileBubbleShift(0);
       vmStatesRef.current = new Map();
       traceRef.current = [];
       runActionsRef.current = [];
@@ -785,8 +823,21 @@ const App = () => {
       if (clickedRobot) {
         setSelectedRobotId(clickedRobot.id);
         setRobotBubbleId(clickedRobot.id);
+        setTileBubble(null);
         event.preventDefault();
+        return;
       }
+
+      const tileType = getTile(simulationRef.current.world, tileX, tileY);
+      const isSpecialTile = tileType !== TileType.Empty && tileType !== TileType.Wall;
+      if (isSpecialTile) {
+        setTileBubble({ x: tileX, y: tileY, type: tileType });
+        setRobotBubbleId(null);
+        event.preventDefault();
+        return;
+      }
+
+      setTileBubble(null);
     },
     [],
   );
@@ -894,6 +945,20 @@ const App = () => {
     ...bubblePosition,
     '--bubble-shift': `${bubbleShift}px`,
   };
+  const tileBubbleInfo = tileBubble ? tileInfoByType[tileBubble.type] : null;
+  const tileBubbleIsBelow = tileBubble ? tileBubble.y <= 1 : false;
+  const tileBubblePosition = tileBubble
+    ? {
+        left: `${((tileBubble.x + 0.5) / simulation.world.width) * 100}%`,
+        top: `${((tileBubble.y + 0.2) / simulation.world.height) * 100}%`,
+      }
+    : { left: '50%', top: '12%' };
+  const tileBubbleStyle: React.CSSProperties & { '--bubble-shift'?: string } = {
+    ...tileBubblePosition,
+    '--bubble-shift': `${tileBubbleShift}px`,
+  };
+  const platePressed = isPressurePlatePressed(simulation.world, simulation.robots);
+  const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
 
   useLayoutEffect(() => {
     if (!robotBubbleId) {
@@ -926,6 +991,38 @@ const App = () => {
     window.addEventListener('resize', updateShift);
     return () => window.removeEventListener('resize', updateShift);
   }, [robotBubbleId, bubblePosition.left, bubblePosition.top]);
+
+  useLayoutEffect(() => {
+    if (!tileBubble) {
+      setTileBubbleShift(0);
+      return;
+    }
+
+    const updateShift = () => {
+      const bubbleEl = tileBubbleRef.current;
+      const stageEl = simStageRef.current;
+      if (!bubbleEl || !stageEl) {
+        return;
+      }
+
+      const padding = 12;
+      const stageRect = stageEl.getBoundingClientRect();
+      const bubbleRect = bubbleEl.getBoundingClientRect();
+      let shift = 0;
+
+      if (bubbleRect.left < stageRect.left + padding) {
+        shift = stageRect.left + padding - bubbleRect.left;
+      } else if (bubbleRect.right > stageRect.right - padding) {
+        shift = stageRect.right - padding - bubbleRect.right;
+      }
+
+      setTileBubbleShift(shift);
+    };
+
+    updateShift();
+    window.addEventListener('resize', updateShift);
+    return () => window.removeEventListener('resize', updateShift);
+  }, [tileBubble, tileBubblePosition.left, tileBubblePosition.top]);
 
   return (
     <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
@@ -1005,6 +1102,47 @@ const App = () => {
                   ) : (
                     <p className="robot-bubble__empty">Robot not active yet.</p>
                   )}
+                </div>
+              ) : null}
+              {tileBubble && tileBubbleInfo ? (
+                <div
+                  className={`robot-bubble tile-bubble${
+                    tileBubbleIsBelow ? ' robot-bubble--below' : ''
+                  }`}
+                  style={tileBubbleStyle}
+                  ref={tileBubbleRef}
+                >
+                  <div className="robot-bubble__header">
+                    <div>
+                      <p className="robot-bubble__eyebrow">Tile</p>
+                      <h4>{tileBubbleInfo.title}</h4>
+                    </div>
+                    <button
+                      type="button"
+                      className="robot-bubble__close"
+                      onClick={() => setTileBubble(null)}
+                      aria-label="Close tile details"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="tile-bubble__description">{tileBubbleInfo.description}</p>
+                  {tileBubble.type === TileType.Door ? (
+                    <dl className="robot-bubble__details">
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{doorOpen ? 'Open' : 'Closed'}</dd>
+                      </div>
+                    </dl>
+                  ) : null}
+                  {tileBubble.type === TileType.PressurePlate ? (
+                    <dl className="robot-bubble__details">
+                      <div>
+                        <dt>Signal</dt>
+                        <dd>{platePressed ? 'Pressed' : 'Idle'}</dd>
+                      </div>
+                    </dl>
+                  ) : null}
                 </div>
               ) : null}
               {showOverlay ? (

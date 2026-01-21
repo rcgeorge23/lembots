@@ -310,6 +310,12 @@ body {
   color: var(--text-muted);
 }
 
+.tile-bubble__description {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .robot-bubble__empty {
   margin: 10px 0 0;
   font-size: 0.85rem;
