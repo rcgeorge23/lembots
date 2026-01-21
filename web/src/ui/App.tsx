@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import * as Blockly from 'blockly';
 import { registerBlocks, toolboxDefinition } from '../blocks/blocklySetup';
 import { compileWorkspace } from '../blocks/compile';
@@ -240,6 +240,7 @@ const App = () => {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
+  const [robotBubbleId, setRobotBubbleId] = useState<string | null>(null);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -753,6 +754,31 @@ const App = () => {
     traceLogRef.current.scrollTop = traceLogRef.current.scrollHeight;
   }, [actionTrace.length]);
 
+  const handleCanvasPointerDown = useCallback(
+    (event: PointerEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      const tileX = Math.floor(x / TILE_SIZE);
+      const tileY = Math.floor(y / TILE_SIZE);
+      const clickedRobot = simulationRef.current.robots.find(
+        (robot) => robot.x === tileX && robot.y === tileY,
+      );
+      if (clickedRobot) {
+        setSelectedRobotId(clickedRobot.id);
+        setRobotBubbleId(clickedRobot.id);
+        event.preventDefault();
+      }
+    },
+    [],
+  );
+
   const selectedRobot = useMemo(() => {
     if (selectedRobotId) {
       const match = simulation.robots.find((robot) => robot.id === selectedRobotId);
@@ -826,6 +852,31 @@ const App = () => {
       : simulation.nextSpawnTick === null
         ? 'Spawner idle.'
         : `Next spawn in ${Math.max(simulation.nextSpawnTick - simulation.stepCount, 0)} ticks.`;
+  const bubbleRobot = robotBubbleId
+    ? simulation.robots.find((robot) => robot.id === robotBubbleId) ?? null
+    : null;
+  const bubbleVmState = robotBubbleId
+    ? vmStatesRef.current.get(robotBubbleId) ?? null
+    : null;
+  const bubbleStatus = bubbleRobot
+    ? bubbleRobot.reachedGoal
+      ? 'Saved'
+      : bubbleRobot.alive
+        ? 'Active'
+        : 'Lost'
+    : '—';
+  const bubbleAction = bubbleVmState?.currentNode?.action;
+  const bubbleProgramLabel = bubbleAction
+    ? actionLabels[bubbleAction]
+    : bubbleVmState?.status === 'done'
+      ? 'Program complete'
+      : 'Idle';
+  const bubblePosition = bubbleRobot
+    ? {
+        left: `${((bubbleRobot.x + 0.5) / simulation.world.width) * 100}%`,
+        top: `${((bubbleRobot.y + 0.2) / simulation.world.height) * 100}%`,
+      }
+    : { left: '50%', top: '12%' };
 
   return (
     <div className={`app${isEditorOpen ? ' app--editor-open' : ''}`}>
@@ -845,49 +896,100 @@ const App = () => {
         <section className="panel panel--sim">
           <h2>Simulation</h2>
           <div className="sim-surface">
-            <canvas
-              ref={canvasRef}
-              width={simulation.world.width * TILE_SIZE}
-              height={simulation.world.height * TILE_SIZE}
+            <div
+              className="sim-stage"
               style={{
                 aspectRatio: `${simulation.world.width} / ${simulation.world.height}`,
               }}
-            />
-            {showOverlay ? (
-              <div className={`sim-overlay sim-overlay--${simulation.status}`}>
-                <div className="sim-overlay__card">
-                  <p className="sim-overlay__eyebrow">
-                    {simulation.status === 'won' ? 'Level Complete' : 'Try Again'}
-                  </p>
-                  <h3>
-                    {simulation.status === 'won'
-                      ? 'Exit reached!'
-                      : 'Robots lost in the maze.'}
-                  </h3>
-                  <p className="sim-overlay__hint">
-                    {simulation.status === 'won'
-                      ? `Saved ${savedCount} of ${simulation.requiredSaved} robots.`
-                      : failMessage}
-                  </p>
-                  <div className="sim-overlay__actions">
-                    {simulation.status === 'won' && hasNextLevel ? (
-                      <button type="button" onClick={() => loadLevel(levelIndex + 1)}>
-                        Next Level
-                      </button>
-                    ) : (
-                      <button type="button" onClick={handleReset}>
-                        Reset
-                      </button>
-                    )}
-                    {hasReplay ? (
-                      <button type="button" onClick={handleReplay}>
-                        Replay
-                      </button>
-                    ) : null}
+            >
+              <canvas
+                ref={canvasRef}
+                width={simulation.world.width * TILE_SIZE}
+                height={simulation.world.height * TILE_SIZE}
+                onPointerDown={handleCanvasPointerDown}
+              />
+              {robotBubbleId ? (
+                <div className="robot-bubble" style={bubblePosition}>
+                  <div className="robot-bubble__header">
+                    <div>
+                      <p className="robot-bubble__eyebrow">Robot</p>
+                      <h4>{robotBubbleId}</h4>
+                    </div>
+                    <button
+                      type="button"
+                      className="robot-bubble__close"
+                      onClick={() => setRobotBubbleId(null)}
+                      aria-label="Close robot details"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {bubbleRobot ? (
+                    <dl className="robot-bubble__details">
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{bubbleStatus}</dd>
+                      </div>
+                      <div>
+                        <dt>Position</dt>
+                        <dd>
+                          ({bubbleRobot.x}, {bubbleRobot.y})
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Facing</dt>
+                        <dd>{directionLabels[bubbleRobot.direction]}</dd>
+                      </div>
+                      <div>
+                        <dt>Program</dt>
+                        <dd>{bubbleProgramLabel}</dd>
+                      </div>
+                      <div>
+                        <dt>VM</dt>
+                        <dd>{bubbleVmState?.status ?? 'idle'}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="robot-bubble__empty">Robot not active yet.</p>
+                  )}
+                </div>
+              ) : null}
+              {showOverlay ? (
+                <div className={`sim-overlay sim-overlay--${simulation.status}`}>
+                  <div className="sim-overlay__card">
+                    <p className="sim-overlay__eyebrow">
+                      {simulation.status === 'won' ? 'Level Complete' : 'Try Again'}
+                    </p>
+                    <h3>
+                      {simulation.status === 'won'
+                        ? 'Exit reached!'
+                        : 'Robots lost in the maze.'}
+                    </h3>
+                    <p className="sim-overlay__hint">
+                      {simulation.status === 'won'
+                        ? `Saved ${savedCount} of ${simulation.requiredSaved} robots.`
+                        : failMessage}
+                    </p>
+                    <div className="sim-overlay__actions">
+                      {simulation.status === 'won' && hasNextLevel ? (
+                        <button type="button" onClick={() => loadLevel(levelIndex + 1)}>
+                          Next Level
+                        </button>
+                      ) : (
+                        <button type="button" onClick={handleReset}>
+                          Reset
+                        </button>
+                      )}
+                      {hasReplay ? (
+                        <button type="button" onClick={handleReplay}>
+                          Replay
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </section>
         <section className="panel panel--editor" aria-label="Block editor">
