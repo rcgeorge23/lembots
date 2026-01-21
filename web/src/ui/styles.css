@@ -1220,12 +1220,6 @@ body {
     font-size: 1rem;
   }
 
-  .mobile-editor-toggle__chevron {
-    font-size: 0.75rem;
-    letter-spacing: -0.08em;
-    opacity: 0.8;
-  }
-
   .app--editor-open .mobile-editor-toggle {
     --amiga-accent: #f87171;
   }
