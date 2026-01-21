@@ -894,8 +894,7 @@ const App = () => {
         </div>
       </header>
       <main className="app__main">
-        <section className="panel panel--sim">
-          <h2>Simulation</h2>
+        <section className="sim-panel" aria-label="Simulation">
           <div className="sim-surface">
             <div
               className="sim-stage"
