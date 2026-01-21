@@ -149,6 +149,7 @@ body {
   height: auto;
   max-height: 100%;
   object-fit: contain;
+  touch-action: none;
 }
 
 .sim-surface {
@@ -160,6 +161,19 @@ body {
   width: 100%;
 }
 
+.sim-stage {
+  position: relative;
+  width: min(100%, 920px);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.sim-stage canvas {
+  width: 100%;
+  height: 100%;
+}
+
 .sim-overlay {
   position: absolute;
   inset: 0;
@@ -168,6 +182,96 @@ body {
   background: rgba(15, 23, 42, 0.72);
   border-radius: 10px;
   padding: 20px;
+  z-index: 4;
+}
+
+.robot-bubble {
+  position: absolute;
+  z-index: 3;
+  min-width: 220px;
+  max-width: 260px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 14px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 16px 24px rgba(2, 6, 23, 0.55);
+  color: var(--panel-highlight);
+  transform: translate(-50%, -110%);
+}
+
+.robot-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: rgba(15, 23, 42, 0.95);
+  border-right: 1px solid rgba(148, 163, 184, 0.4);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.robot-bubble__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.robot-bubble__header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.robot-bubble__eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+.robot-bubble__close {
+  border: none;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--panel-highlight);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.robot-bubble__details {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.robot-bubble__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.robot-bubble__details dt {
+  font-weight: 600;
+  color: var(--panel-highlight);
+}
+
+.robot-bubble__details dd {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.robot-bubble__empty {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .sim-overlay__card {
