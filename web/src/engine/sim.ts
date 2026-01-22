@@ -28,6 +28,7 @@ export interface SimulationState {
   stepCount: number;
   maxSteps: number;
   requiredSaved: number;
+  savedCount: number;
   spawnedCount: number;
   nextSpawnTick: number | null;
   doorUnlocked: boolean;
@@ -65,6 +66,21 @@ const applyExitStatus = (world: World, exits: Exit[], robot: RobotState): RobotS
   }
 
   return robot;
+};
+
+const splitRobotsByGoal = (
+  robots: RobotState[],
+): { activeRobots: RobotState[]; savedCount: number } => {
+  const activeRobots: RobotState[] = [];
+  let savedCount = 0;
+  robots.forEach((robot) => {
+    if (robot.reachedGoal) {
+      savedCount += 1;
+    } else {
+      activeRobots.push(robot);
+    }
+  });
+  return { activeRobots, savedCount };
 };
 
 const createSpawnedRobot = (
@@ -147,19 +163,20 @@ export const createSimulation = ({
   requiredSaved = 1,
 }: SimulationConfig): SimulationState => {
   const { robots, spawnedCount, nextSpawnTick } = initializeRobots(spawner, world, exits);
-  const savedCount = robots.filter((robot) => robot.reachedGoal).length;
-  const doorUnlocked = isPressurePlatePressed(world, robots);
+  const { activeRobots, savedCount } = splitRobotsByGoal(robots);
+  const doorUnlocked = isPressurePlatePressed(world, activeRobots);
   const jettyPositions = listPositionsForTile(world, TileType.Jetty);
   const raftStates = initializeRafts(world, jettyPositions);
   return {
     world,
-    robots,
+    robots: activeRobots,
     spawner,
     exits,
     status: savedCount >= requiredSaved ? 'won' : 'running',
     stepCount: 0,
     maxSteps,
     requiredSaved,
+    savedCount,
     spawnedCount,
     nextSpawnTick,
     doorUnlocked,
@@ -373,21 +390,20 @@ export const stepSimulation = (
   const raftAdjustedRobots = raftMoveResult.robots.map((robot) =>
     applyExitStatus(raftMoveResult.world, state.exits, robot),
   );
+  const { activeRobots, savedCount: savedThisStep } = splitRobotsByGoal(raftAdjustedRobots);
+  const savedCount = state.savedCount + savedThisStep;
   const doorUnlocked =
     state.doorUnlocked ||
     platePressed ||
-    isPressurePlatePressed(raftMoveResult.world, raftAdjustedRobots);
+    isPressurePlatePressed(raftMoveResult.world, activeRobots);
   const stepCount = state.stepCount + 1;
-  const savedCount = raftAdjustedRobots.filter((robot) => robot.reachedGoal).length;
-  const hasActiveRobot = raftAdjustedRobots.some(
-    (robot) => robot.alive && !robot.reachedGoal,
-  );
+  const hasActiveRobot = activeRobots.some((robot) => robot.alive);
   const hasRemainingSpawns = spawned.spawnedCount < state.spawner.count;
 
   if (savedCount >= state.requiredSaved) {
     return {
       ...state,
-      robots: raftAdjustedRobots,
+      robots: activeRobots,
       spawnedCount: spawned.spawnedCount,
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'won',
@@ -396,13 +412,14 @@ export const stepSimulation = (
       globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
+      savedCount,
     };
   }
 
   if (stepCount >= state.maxSteps) {
     return {
       ...state,
-      robots: raftAdjustedRobots,
+      robots: activeRobots,
       spawnedCount: spawned.spawnedCount,
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'lost',
@@ -411,13 +428,14 @@ export const stepSimulation = (
       globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
+      savedCount,
     };
   }
 
   if (!hasActiveRobot && !hasRemainingSpawns) {
     return {
       ...state,
-      robots: raftAdjustedRobots,
+      robots: activeRobots,
       spawnedCount: spawned.spawnedCount,
       nextSpawnTick: spawned.nextSpawnTick,
       status: 'lost',
@@ -426,12 +444,13 @@ export const stepSimulation = (
       globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
+      savedCount,
     };
   }
 
   return {
     ...state,
-    robots: raftAdjustedRobots,
+    robots: activeRobots,
     spawnedCount: spawned.spawnedCount,
     nextSpawnTick: spawned.nextSpawnTick,
     stepCount,
@@ -439,5 +458,6 @@ export const stepSimulation = (
     globalSignal,
     world: raftMoveResult.world,
     raftStates: raftMoveResult.raftStates,
+    savedCount,
   };
 };

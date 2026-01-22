@@ -494,7 +494,9 @@ const App = () => {
       return;
     }
 
-    if (currentSimulation.robots.length === 0) {
+    const hasRemainingSpawns =
+      currentSimulation.spawnedCount < currentSimulation.spawner.count;
+    if (currentSimulation.robots.length === 0 && !hasRemainingSpawns) {
       setIsRunning(false);
       return;
     }
@@ -541,7 +543,10 @@ const App = () => {
     setVmState(selectedVm);
 
     let nextSimulation = currentSimulation;
-    if (actions.some((action) => action)) {
+    if (
+      actions.some((action) => action) ||
+      (currentSimulation.robots.length === 0 && hasRemainingSpawns)
+    ) {
       nextSimulation = stepSimulation(currentSimulation, actions);
       runActionsRef.current = [...runActionsRef.current, actions];
     }
@@ -567,10 +572,8 @@ const App = () => {
       const reachedLimit =
         sawStepLimit ||
         nextSimulation.stepCount >= nextSimulation.maxSteps;
-      const savedCount = nextSimulation.robots.filter((robot) => robot.reachedGoal).length;
-      const hasActiveRobot = nextSimulation.robots.some(
-        (robot) => robot.alive && !robot.reachedGoal,
-      );
+      const savedCount = nextSimulation.savedCount;
+      const hasActiveRobot = nextSimulation.robots.some((robot) => robot.alive);
       const remainingCount = Math.max(
         nextSimulation.spawner.count - nextSimulation.spawnedCount,
         0,
@@ -984,11 +987,9 @@ const App = () => {
             ? 'Replaying'
             : 'Ready';
 
-  const savedCount = simulation.robots.filter((robot) => robot.reachedGoal).length;
+  const savedCount = simulation.savedCount;
   const lostCount = simulation.robots.filter((robot) => !robot.alive).length;
-  const activeCount = simulation.robots.filter(
-    (robot) => robot.alive && !robot.reachedGoal,
-  ).length;
+  const activeCount = simulation.robots.filter((robot) => robot.alive).length;
   const remainingCount = Math.max(simulation.spawner.count - simulation.spawnedCount, 0);
   const hasDoors = simulation.world.grid.some((row) => row.some((tile) => tile === TileType.Door));
   const doorStatus = hasDoors
