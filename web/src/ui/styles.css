@@ -1,6 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 :root {
-  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-  line-height: 1.5;
+  --pixel-font: 'Press Start 2P', 'VT323', 'Courier New', monospace;
+  font-family: var(--pixel-font);
+  line-height: 1.4;
   font-weight: 400;
   color: #e2e8f0;
   background-color: #0f172a;
@@ -380,6 +383,7 @@ body {
   width: 100%;
   min-height: 320px;
   height: 360px;
+  font-family: var(--pixel-font);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
@@ -960,8 +964,7 @@ body {
   border: 1px solid rgba(34, 197, 94, 0.35);
   box-shadow: inset 0 0 16px rgba(15, 118, 110, 0.35);
   color: #8dffae;
-  font-family: 'Share Tech Mono', 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family: var(--pixel-font);
 }
 
 .controls__trace-log ol {
