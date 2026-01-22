@@ -33,15 +33,47 @@ const buildActionBlocks = (
   return `<block type="${actionBlockTypes[first]}" id="${nextId()}"${attrs}>${next}</block>`;
 };
 
+const parseBlockXml = (blockXml: string): Element | null => {
+  if (typeof DOMParser === 'undefined') {
+    return null;
+  }
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<xml>${blockXml}</xml>`, 'text/xml');
+  return doc.querySelector('block');
+};
+
 const insertNext = (blockXml: string, nextXml?: string): string => {
   if (!nextXml) {
     return blockXml;
   }
-  const closingIndex = blockXml.lastIndexOf('</block>');
-  if (closingIndex === -1) {
-    return blockXml;
+  const blockElement = parseBlockXml(blockXml);
+  const nextElement = parseBlockXml(nextXml);
+  if (!blockElement || !nextElement) {
+    const closingIndex = blockXml.lastIndexOf('</block>');
+    if (closingIndex === -1) {
+      return blockXml;
+    }
+    return `${blockXml.slice(0, closingIndex)}<next>${nextXml}</next>${blockXml.slice(closingIndex)}`;
   }
-  return `${blockXml.slice(0, closingIndex)}<next>${nextXml}</next>${blockXml.slice(closingIndex)}`;
+
+  let cursor = blockElement;
+  while (true) {
+    const nextTag = Array.from(cursor.children).find((child) => child.tagName === 'next');
+    if (!nextTag) {
+      break;
+    }
+    const nextBlock = Array.from(nextTag.children).find((child) => child.tagName === 'block');
+    if (!nextBlock) {
+      break;
+    }
+    cursor = nextBlock;
+  }
+
+  const nextWrapper = blockElement.ownerDocument.createElement('next');
+  const imported = blockElement.ownerDocument.importNode(nextElement, true);
+  nextWrapper.appendChild(imported);
+  cursor.appendChild(nextWrapper);
+  return blockElement.outerHTML;
 };
 
 const buildRepeatUntilBlock = (
@@ -107,13 +139,15 @@ const buildLevel02Solution = () => {
 
 const buildLevel03Solution = () => {
   const nextId = createIdFactory('level-03');
-  const shiftRight = buildActionBlocks(
-    ['TURN_RIGHT', 'MOVE_FORWARD', 'MOVE_FORWARD', 'MOVE_FORWARD', 'TURN_LEFT'],
-    nextId,
+  const buildStride = () =>
+    buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const shiftRight = insertNext(
+    buildActionBlocks(['TURN_RIGHT'], nextId),
+    insertNext(buildStride(), buildActionBlocks(['TURN_LEFT'], nextId)),
   );
-  const shiftLeft = buildActionBlocks(
-    ['TURN_LEFT', 'MOVE_FORWARD', 'MOVE_FORWARD', 'MOVE_FORWARD', 'TURN_RIGHT'],
-    nextId,
+  const shiftLeft = insertNext(
+    buildActionBlocks(['TURN_LEFT'], nextId),
+    insertNext(buildStride(), buildActionBlocks(['TURN_RIGHT'], nextId)),
   );
   const advance = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const rightIf = buildIfBlock('lembot_wall_right', shiftLeft, nextId, {
