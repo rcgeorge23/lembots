@@ -134,6 +134,12 @@ const CONDITION_BLOCKS = [
     colour: 30,
   },
   {
+    type: 'lembot_on_pressure_plate',
+    message0: 'on pressure plate?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
     type: 'lembot_hazard_ahead',
     message0: 'hazard ahead?',
     output: 'Boolean',

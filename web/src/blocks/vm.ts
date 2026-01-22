@@ -1,6 +1,6 @@
 import type { RobotAction, RobotState } from '../engine/robot';
 import { getForwardPosition, turnLeft, turnRight } from '../engine/rules';
-import { isDoor, isGoal, isHazard, isWall, type World } from '../engine/world';
+import { isDoor, isGoal, isHazard, isPressurePlate, isWall, type World } from '../engine/world';
 import type { ActionNode, ConditionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
 
 export type VmStatus = 'running' | 'done' | 'step_limit';
@@ -97,6 +97,8 @@ const evaluatePrimitiveCondition = (
     }
     case 'ON_GOAL':
       return isOnExit;
+    case 'ON_PRESSURE_PLATE':
+      return isPressurePlate(world, robot.x, robot.y);
     case 'HAZARD_AHEAD': {
       const forward = getForwardPosition(robot, robot.direction);
       return isHazard(world, forward.x, forward.y);
