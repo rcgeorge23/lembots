@@ -240,7 +240,7 @@ body {
   content: '';
   position: absolute;
   bottom: -8px;
-  left: 50%;
+  left: calc(50% + var(--bubble-pointer-offset, 0px));
   width: 14px;
   height: 14px;
   background: rgba(15, 23, 42, 0.95);

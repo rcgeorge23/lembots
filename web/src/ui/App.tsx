@@ -344,12 +344,14 @@ const App = () => {
   );
   const [robotBubbleId, setRobotBubbleId] = useState<string | null>(null);
   const [bubbleShift, setBubbleShift] = useState(0);
+  const [bubblePointerOffset, setBubblePointerOffset] = useState(0);
   const [tileBubble, setTileBubble] = useState<{
     x: number;
     y: number;
     type: TileType;
   } | null>(null);
   const [tileBubbleShift, setTileBubbleShift] = useState(0);
+  const [tileBubblePointerOffset, setTileBubblePointerOffset] = useState(0);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
 
@@ -386,6 +388,8 @@ const App = () => {
       setTileBubble(null);
       setBubbleShift(0);
       setTileBubbleShift(0);
+      setBubblePointerOffset(0);
+      setTileBubblePointerOffset(0);
       vmStatesRef.current = new Map();
       traceRef.current = [];
       runActionsRef.current = [];
@@ -1022,9 +1026,13 @@ const App = () => {
         top: `${((bubbleRobot.y + 0.2) / simulation.world.height) * 100}%`,
       }
     : { left: '50%', top: '12%' };
-  const bubbleStyle: React.CSSProperties & { '--bubble-shift'?: string } = {
+  const bubbleStyle: React.CSSProperties & {
+    '--bubble-shift'?: string;
+    '--bubble-pointer-offset'?: string;
+  } = {
     ...bubblePosition,
     '--bubble-shift': `${bubbleShift}px`,
+    '--bubble-pointer-offset': `${bubblePointerOffset}px`,
   };
   const tileBubbleInfo = tileBubble ? tileInfoByType[tileBubble.type] : null;
   const tileBubbleIsBelow = tileBubble ? tileBubble.y <= 1 : false;
@@ -1034,9 +1042,13 @@ const App = () => {
         top: `${((tileBubble.y + 0.2) / simulation.world.height) * 100}%`,
       }
     : { left: '50%', top: '12%' };
-  const tileBubbleStyle: React.CSSProperties & { '--bubble-shift'?: string } = {
+  const tileBubbleStyle: React.CSSProperties & {
+    '--bubble-shift'?: string;
+    '--bubble-pointer-offset'?: string;
+  } = {
     ...tileBubblePosition,
     '--bubble-shift': `${tileBubbleShift}px`,
+    '--bubble-pointer-offset': `${tileBubblePointerOffset}px`,
   };
   const platePressed = isPressurePlatePressed(simulation.world, simulation.robots);
   const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
@@ -1069,14 +1081,29 @@ const App = () => {
     [],
   );
 
+  const getBubblePointerOffset = useCallback((bubbleEl: HTMLDivElement | null, shift: number) => {
+    if (!bubbleEl) {
+      return 0;
+    }
+
+    const bubbleRect = bubbleEl.getBoundingClientRect();
+    const pointerPadding = 18;
+    const maxOffset = Math.max(0, bubbleRect.width / 2 - pointerPadding);
+    const desiredOffset = -shift;
+    return Math.min(maxOffset, Math.max(-maxOffset, desiredOffset));
+  }, []);
+
   useLayoutEffect(() => {
     if (!robotBubbleId) {
       setBubbleShift(0);
+      setBubblePointerOffset(0);
       return;
     }
 
     const updateShift = () => {
-      setBubbleShift(getBubbleShift(bubbleRef.current, bubbleShift));
+      const nextShift = getBubbleShift(bubbleRef.current, bubbleShift);
+      setBubbleShift(nextShift);
+      setBubblePointerOffset(getBubblePointerOffset(bubbleRef.current, nextShift));
     };
 
     updateShift();
@@ -1087,17 +1114,21 @@ const App = () => {
     bubblePosition.top,
     bubbleShift,
     getBubbleShift,
+    getBubblePointerOffset,
     robotBubbleId,
   ]);
 
   useLayoutEffect(() => {
     if (!tileBubble) {
       setTileBubbleShift(0);
+      setTileBubblePointerOffset(0);
       return;
     }
 
     const updateShift = () => {
-      setTileBubbleShift(getBubbleShift(tileBubbleRef.current, tileBubbleShift));
+      const nextShift = getBubbleShift(tileBubbleRef.current, tileBubbleShift);
+      setTileBubbleShift(nextShift);
+      setTileBubblePointerOffset(getBubblePointerOffset(tileBubbleRef.current, nextShift));
     };
 
     updateShift();
@@ -1109,6 +1140,7 @@ const App = () => {
     tileBubblePosition.left,
     tileBubblePosition.top,
     tileBubbleShift,
+    getBubblePointerOffset,
   ]);
 
   return (
