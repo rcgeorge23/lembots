@@ -13,8 +13,6 @@ const compileCondition = (block: Blockly.Block | null): ConditionNode => {
       return { kind: 'primitive', condition: 'ON_GOAL' };
     case 'lembot_on_pressure_plate':
       return { kind: 'primitive', condition: 'ON_PRESSURE_PLATE' };
-    case 'lembot_hazard_ahead':
-      return { kind: 'primitive', condition: 'HAZARD_AHEAD' };
     case 'lembot_right_clear':
       return { kind: 'primitive', condition: 'RIGHT_CLEAR' };
     case 'lembot_left_clear':

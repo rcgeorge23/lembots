@@ -196,12 +196,12 @@ const buildLevel03Solution = () => {
     { elseBlockXml: rightIf, position: { x: 24, y: 24 } },
   );
   const approachWater = buildRepeatUntilBlock(
-    buildConditionBlock('lembot_hazard_ahead', nextId),
+    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
     buildActionBlocks(['MOVE_FORWARD'], nextId),
     nextId,
   );
   const waitForRaft = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_hazard_ahead', nextId),
+    buildConditionBlock('lembot_path_ahead_clear', nextId),
     buildActionBlocks(['WAIT'], nextId),
     nextId,
   );
@@ -377,10 +377,15 @@ const buildGeneralSolution = () => {
     nextId,
     { elseBlockXml: turnRight },
   );
-  const avoidHazard = buildIfBlock('lembot_hazard_ahead', hazardWait, nextId, {
-    elseBlockXml: wallFollower,
-    position: { x: 24, y: 24 },
-  });
+  const avoidHazard = buildIfBlockWithCondition(
+    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
+    hazardWait,
+    nextId,
+    {
+      elseBlockXml: wallFollower,
+      position: { x: 24, y: 24 },
+    },
+  );
   const loop = buildRepeatUntilBlock(
     buildConditionBlock('lembot_on_goal', nextId),
     avoidHazard,
