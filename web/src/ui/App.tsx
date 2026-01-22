@@ -243,7 +243,14 @@ interface LevelDefinition {
   name: string;
   difficulty: number;
   grid: number[][];
-  spawner?: { x: number; y: number; dir: number | 'N' | 'E' | 'S' | 'W'; count: number; intervalTicks: number };
+  spawner?: {
+    x: number;
+    y: number;
+    dir: number | 'N' | 'E' | 'S' | 'W';
+    count: number;
+    intervalTicks: number;
+    starts?: { x: number; y: number; dir: number | 'N' | 'E' | 'S' | 'W' }[];
+  };
   exits?: { x: number; y: number }[];
   requiredSaved?: number;
   maxTicks?: number;
@@ -307,6 +314,10 @@ const App = () => {
     const spawner: Spawner = {
       ...rawSpawner,
       dir: parseDirection(rawSpawner.dir),
+      starts: rawSpawner.starts?.map((start) => ({
+        ...start,
+        dir: parseDirection(start.dir),
+      })),
     };
     const exits = level.exits ?? (level.goal ? [level.goal] : []);
     return createSimulation({
