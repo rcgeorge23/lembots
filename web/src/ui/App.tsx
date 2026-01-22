@@ -869,7 +869,7 @@ const App = () => {
     const storedProgram = loadStoredProgram();
     if (storedProgram) {
       try {
-        Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(storedProgram), workspace);
+        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(storedProgram), workspace);
       } catch (error) {
         console.warn('Unable to restore program from local storage.', error);
       }
