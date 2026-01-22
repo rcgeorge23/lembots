@@ -546,7 +546,7 @@ const App = () => {
       runActionsRef.current = [...runActionsRef.current, actions];
     }
 
-    if (sawStepLimit) {
+    if (sawStepLimit && nextSimulation.status === 'running') {
       nextSimulation = { ...nextSimulation, status: 'lost' };
     }
 
@@ -1545,6 +1545,10 @@ const App = () => {
           <div>
             <span className="mobile-console__label">Status</span>
             <span className="mobile-console__value">{statusLabel}</span>
+          </div>
+          <div>
+            <span className="mobile-console__label">Saved</span>
+            <span className="mobile-console__value">{quotaLabel}</span>
           </div>
           <div>
             <span className="mobile-console__label">Speed</span>
