@@ -11,6 +11,7 @@ export interface Spawner {
   dir: Direction;
   count: number;
   intervalTicks: number;
+  starts?: { x: number; y: number; dir: Direction }[];
 }
 
 export interface Exit {
@@ -66,11 +67,15 @@ const applyExitStatus = (world: World, exits: Exit[], robot: RobotState): RobotS
   return robot;
 };
 
-const createSpawnedRobot = (spawner: Spawner, index: number): RobotState => ({
+const createSpawnedRobot = (
+  spawner: Spawner,
+  index: number,
+  startOverride?: { x: number; y: number; dir: Direction },
+): RobotState => ({
   id: `robot-${index + 1}`,
-  x: spawner.x,
-  y: spawner.y,
-  direction: spawner.dir,
+  x: startOverride?.x ?? spawner.x,
+  y: startOverride?.y ?? spawner.y,
+  direction: startOverride?.dir ?? spawner.dir,
   alive: true,
   reachedGoal: false,
 });
@@ -86,13 +91,19 @@ const initializeRobots = (spawner: Spawner, world: World, exits: Exit[]): {
 
   if (spawner.intervalTicks <= 0) {
     const robots = Array.from({ length: spawner.count }, (_, index) =>
-      applyExitStatus(world, exits, createSpawnedRobot(spawner, index)),
+      applyExitStatus(
+        world,
+        exits,
+        createSpawnedRobot(spawner, index, spawner.starts?.[index]),
+      ),
     );
     return { robots, spawnedCount: spawner.count, nextSpawnTick: null };
   }
 
   return {
-    robots: [applyExitStatus(world, exits, createSpawnedRobot(spawner, 0))],
+    robots: [
+      applyExitStatus(world, exits, createSpawnedRobot(spawner, 0, spawner.starts?.[0])),
+    ],
     spawnedCount: 1,
     nextSpawnTick: spawner.intervalTicks,
   };
