@@ -15,14 +15,10 @@ const compileCondition = (block: Blockly.Block | null): ConditionNode => {
       return { kind: 'primitive', condition: 'ON_PRESSURE_PLATE' };
     case 'lembot_hazard_ahead':
       return { kind: 'primitive', condition: 'HAZARD_AHEAD' };
-    case 'lembot_hazard_right':
-      return { kind: 'primitive', condition: 'HAZARD_RIGHT' };
-    case 'lembot_wall_right':
-      return { kind: 'primitive', condition: 'WALL_RIGHT' };
-    case 'lembot_hazard_left':
-      return { kind: 'primitive', condition: 'HAZARD_LEFT' };
-    case 'lembot_wall_left':
-      return { kind: 'primitive', condition: 'WALL_LEFT' };
+    case 'lembot_right_clear':
+      return { kind: 'primitive', condition: 'RIGHT_CLEAR' };
+    case 'lembot_left_clear':
+      return { kind: 'primitive', condition: 'LEFT_CLEAR' };
     case 'lembot_signal_active':
       return { kind: 'primitive', condition: 'GLOBAL_SIGNAL_ON' };
     case 'lembot_logic_not': {

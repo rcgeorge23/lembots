@@ -125,6 +125,21 @@ const buildIfBlock = (
     '</block>';
 };
 
+const buildIfBlockWithCondition = (
+  conditionBlockXml: string,
+  thenBlockXml: string,
+  nextId: () => string,
+  options?: { elseBlockXml?: string; position?: { x: number; y: number } },
+): string => {
+  const attrs = options?.position ? ` x="${options.position.x}" y="${options.position.y}"` : '';
+  const elseXml = options?.elseBlockXml ? `<statement name="ELSE">${options.elseBlockXml}</statement>` : '';
+  return `<block type="lembot_if" id="${nextId()}"${attrs}>` +
+    `<value name="CONDITION">${conditionBlockXml}</value>` +
+    `<statement name="THEN">${thenBlockXml}</statement>` +
+    elseXml +
+    '</block>';
+};
+
 const buildLevel01Solution = () => {
   const nextId = createIdFactory('level-01');
   const repeatMove = buildRepeatBlock(
@@ -140,7 +155,12 @@ const buildLevel02Solution = () => {
   const nextId = createIdFactory('level-02');
   const thenXml = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const elseXml = buildActionBlocks(['TURN_RIGHT', 'MOVE_FORWARD', 'TURN_LEFT'], nextId);
-  const ifBlock = buildIfBlock('lembot_wall_right', thenXml, nextId, { elseBlockXml: elseXml });
+  const ifBlock = buildIfBlockWithCondition(
+    buildNotConditionBlock('lembot_right_clear', nextId),
+    thenXml,
+    nextId,
+    { elseBlockXml: elseXml },
+  );
   const repeatUntil = buildRepeatUntilBlock(
     buildConditionBlock('lembot_on_goal', nextId),
     ifBlock,
@@ -163,13 +183,18 @@ const buildLevel03Solution = () => {
     insertNext(buildStride(), buildActionBlocks(['TURN_RIGHT'], nextId)),
   );
   const advance = buildActionBlocks(['MOVE_FORWARD'], nextId);
-  const rightIf = buildIfBlock('lembot_wall_right', shiftLeft, nextId, {
-    elseBlockXml: advance,
-  });
-  const alignIf = buildIfBlock('lembot_wall_left', shiftRight, nextId, {
-    elseBlockXml: rightIf,
-    position: { x: 24, y: 24 },
-  });
+  const rightIf = buildIfBlockWithCondition(
+    buildNotConditionBlock('lembot_right_clear', nextId),
+    shiftLeft,
+    nextId,
+    { elseBlockXml: advance },
+  );
+  const alignIf = buildIfBlockWithCondition(
+    buildNotConditionBlock('lembot_left_clear', nextId),
+    shiftRight,
+    nextId,
+    { elseBlockXml: rightIf, position: { x: 24, y: 24 } },
+  );
   const approachWater = buildRepeatUntilBlock(
     buildConditionBlock('lembot_hazard_ahead', nextId),
     buildActionBlocks(['MOVE_FORWARD'], nextId),
@@ -346,9 +371,12 @@ const buildGeneralSolution = () => {
   const proceed = buildIfBlock('lembot_path_ahead_clear', forward, nextId, {
     elseBlockXml: turnLeft,
   });
-  const wallFollower = buildIfBlock('lembot_wall_right', proceed, nextId, {
-    elseBlockXml: turnRight,
-  });
+  const wallFollower = buildIfBlockWithCondition(
+    buildNotConditionBlock('lembot_right_clear', nextId),
+    proceed,
+    nextId,
+    { elseBlockXml: turnRight },
+  );
   const avoidHazard = buildIfBlock('lembot_hazard_ahead', hazardWait, nextId, {
     elseBlockXml: wallFollower,
     position: { x: 24, y: 24 },
