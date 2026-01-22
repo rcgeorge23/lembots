@@ -88,7 +88,7 @@ const evaluatePrimitiveCondition = (
       : isGoal(world, robot.x, robot.y);
 
   switch (condition) {
-    case 'PATH_AHEAD_CLEAR': {
+    case 'AHEAD_CLEAR': {
       const forward = getForwardPosition(robot, robot.direction);
       return !isWall(world, forward.x, forward.y) &&
         !isHazard(world, forward.x, forward.y) &&

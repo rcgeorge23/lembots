@@ -56,7 +56,7 @@ Actions:
 - `WAIT`
 
 Conditions:
-- `PATH_AHEAD_CLEAR?`
+- `AHEAD_CLEAR?`
 - `ON_GOAL?`
 - `ON_HAZARD?` (or hazard is handled automatically, but condition can exist)
 - `ON_BUTTON?`

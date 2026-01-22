@@ -108,8 +108,8 @@ const CONTROL_BLOCKS = [
 
 const CONDITION_BLOCKS = [
   {
-    type: 'lembot_path_ahead_clear',
-    message0: 'path ahead clear?',
+    type: 'lembot_ahead_clear',
+    message0: 'ahead clear?',
     output: 'Boolean',
     colour: 30,
   },

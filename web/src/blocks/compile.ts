@@ -7,8 +7,8 @@ const compileCondition = (block: Blockly.Block | null): ConditionNode => {
   }
 
   switch (block.type) {
-    case 'lembot_path_ahead_clear':
-      return { kind: 'primitive', condition: 'PATH_AHEAD_CLEAR' };
+    case 'lembot_ahead_clear':
+      return { kind: 'primitive', condition: 'AHEAD_CLEAR' };
     case 'lembot_on_goal':
       return { kind: 'primitive', condition: 'ON_GOAL' };
     case 'lembot_on_pressure_plate':
