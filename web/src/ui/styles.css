@@ -139,6 +139,33 @@ body {
   gap: 12px;
 }
 
+.panel__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel__action {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--panel-highlight);
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.panel__action:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.panel__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .panel__close {
   border: 1px solid rgba(148, 163, 184, 0.4);
   background: rgba(15, 23, 42, 0.6);

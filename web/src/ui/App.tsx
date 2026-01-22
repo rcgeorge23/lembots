@@ -35,6 +35,7 @@ import level07 from '../levels/builtin/level-07.json';
 import level08 from '../levels/builtin/level-08.json';
 import level09 from '../levels/builtin/level-09.json';
 import level10 from '../levels/builtin/level-10.json';
+import { levelSolutionXmlById } from '../levels/solutions';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
@@ -388,6 +389,8 @@ const App = () => {
   const [tileBubblePointerOffset, setTileBubblePointerOffset] = useState(0);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
+  const currentLevel = levels[levelIndex];
+  const currentSolutionXml = currentLevel ? levelSolutionXmlById[currentLevel.id] : null;
 
   const simulationRef = useRef(simulation);
   const vmStatesRef = useRef<Map<string, VmState>>(new Map());
@@ -433,6 +436,19 @@ const App = () => {
     },
     [createSimulationForLevel],
   );
+
+  const handleLoadSolution = useCallback(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || !currentSolutionXml) {
+      return;
+    }
+
+    workspace.clear();
+    const dom = Blockly.utils.xml.textToDom(currentSolutionXml);
+    Blockly.Xml.domToWorkspace(dom, workspace);
+    workspace.scrollCenter();
+    saveStoredProgram(workspace);
+  }, [currentSolutionXml]);
 
   useEffect(() => {
     simulationRef.current = simulation;
@@ -1016,7 +1032,6 @@ const App = () => {
 
   const isBusy = isRunning || isReplaying;
   const hasReplay = lastRunActions.length > 0;
-  const currentLevel = levels[levelIndex];
   const hasNextLevel = levelIndex + 1 < levels.length;
   const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
   const isFastForward = speedMs === fastForwardSpeedMs;
@@ -1385,14 +1400,24 @@ const App = () => {
         <section className="panel panel--editor" aria-label="Block editor">
           <div className="panel__header">
             <h2>Block Editor</h2>
-            <button
-              type="button"
-              className="panel__close"
-              onClick={() => setIsEditorOpen(false)}
-              aria-label="Close block editor"
-            >
-              ✕
-            </button>
+            <div className="panel__header-actions">
+              <button
+                type="button"
+                className="panel__action"
+                onClick={handleLoadSolution}
+                disabled={!currentSolutionXml}
+              >
+                Load Solution
+              </button>
+              <button
+                type="button"
+                className="panel__close"
+                onClick={() => setIsEditorOpen(false)}
+                aria-label="Close block editor"
+              >
+                ✕
+              </button>
+            </div>
           </div>
           <div className="blockly-host" ref={blocklyRef} />
         </section>
