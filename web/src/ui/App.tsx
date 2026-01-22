@@ -35,7 +35,7 @@ import level07 from '../levels/builtin/level-07.json';
 import level08 from '../levels/builtin/level-08.json';
 import level09 from '../levels/builtin/level-09.json';
 import level10 from '../levels/builtin/level-10.json';
-import { levelSolutionXmlById } from '../levels/solutions';
+import { generalSolutionXml, levelSolutionXmlById } from '../levels/solutions';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
@@ -449,6 +449,19 @@ const App = () => {
     workspace.scrollCenter();
     saveStoredProgram(workspace);
   }, [currentSolutionXml]);
+
+  const handleLoadGeneralSolution = useCallback(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || !generalSolutionXml) {
+      return;
+    }
+
+    workspace.clear();
+    const dom = Blockly.utils.xml.textToDom(generalSolutionXml);
+    Blockly.Xml.domToWorkspace(dom, workspace);
+    workspace.scrollCenter();
+    saveStoredProgram(workspace);
+  }, []);
 
   useEffect(() => {
     simulationRef.current = simulation;
@@ -1407,6 +1420,9 @@ const App = () => {
           <div className="panel__header">
             <h2>Block Editor</h2>
             <div className="panel__header-actions">
+              <button type="button" className="panel__action" onClick={handleLoadGeneralSolution}>
+                Load General Solution
+              </button>
               <button
                 type="button"
                 className="panel__action"

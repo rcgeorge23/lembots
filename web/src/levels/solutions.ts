@@ -337,6 +337,30 @@ const buildLevel10Solution = () => {
   return wrapXml(chain);
 };
 
+const buildGeneralSolution = () => {
+  const nextId = createIdFactory('general');
+  const hazardWait = buildActionBlocks(['WAIT'], nextId);
+  const forward = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const proceed = buildIfBlock('lembot_path_ahead_clear', forward, nextId, {
+    elseBlockXml: turnLeft,
+  });
+  const wallFollower = buildIfBlock('lembot_wall_right', proceed, nextId, {
+    elseBlockXml: turnRight,
+  });
+  const avoidHazard = buildIfBlock('lembot_hazard_ahead', hazardWait, nextId, {
+    elseBlockXml: wallFollower,
+    position: { x: 24, y: 24 },
+  });
+  const loop = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_goal', nextId),
+    avoidHazard,
+    nextId,
+  );
+  return wrapXml(loop);
+};
+
 export const levelSolutionXmlById: Record<string, string> = {
   'level-01': buildLevel01Solution(),
   'level-02': buildLevel02Solution(),
@@ -349,3 +373,5 @@ export const levelSolutionXmlById: Record<string, string> = {
   'level-09': buildLevel09Solution(),
   'level-10': buildLevel10Solution(),
 };
+
+export const generalSolutionXml = buildGeneralSolution();
