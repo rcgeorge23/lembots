@@ -5,8 +5,7 @@ export type ConditionType =
   | 'ON_GOAL'
   | 'ON_PRESSURE_PLATE'
   | 'RIGHT_CLEAR'
-  | 'LEFT_CLEAR'
-  | 'GLOBAL_SIGNAL_ON';
+  | 'LEFT_CLEAR';
 
 export type ConditionNode =
   | { kind: 'primitive'; condition: ConditionType }

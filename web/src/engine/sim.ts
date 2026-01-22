@@ -32,7 +32,6 @@ export interface SimulationState {
   spawnedCount: number;
   nextSpawnTick: number | null;
   doorUnlocked: boolean;
-  globalSignal: boolean;
   raftStates: RaftState[];
   jettyPositions: Position[];
 }
@@ -180,7 +179,6 @@ export const createSimulation = ({
     spawnedCount,
     nextSpawnTick,
     doorUnlocked,
-    globalSignal: false,
     raftStates,
     jettyPositions,
   };
@@ -344,7 +342,6 @@ export const stepSimulation = (
     return state;
   }
 
-  let globalSignal = state.globalSignal;
   const occupied = buildOccupiedPositions(state.robots);
   const spawned = spawnNextRobot(state, occupied);
   const nextOccupied = buildOccupiedPositions(spawned.robots);
@@ -359,11 +356,6 @@ export const stepSimulation = (
     }
 
     let nextRobot = robot;
-    if (action === 'SIGNAL_ON') {
-      globalSignal = true;
-    } else if (action === 'SIGNAL_OFF') {
-      globalSignal = false;
-    }
     const wasBlocking = isBlockingRobot(robot);
     if (wasBlocking) {
       nextOccupied.delete(positionKey(robot.x, robot.y));
@@ -409,7 +401,6 @@ export const stepSimulation = (
       status: 'won',
       stepCount,
       doorUnlocked,
-      globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
       savedCount,
@@ -425,7 +416,6 @@ export const stepSimulation = (
       status: 'lost',
       stepCount,
       doorUnlocked,
-      globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
       savedCount,
@@ -441,7 +431,6 @@ export const stepSimulation = (
       status: 'lost',
       stepCount,
       doorUnlocked,
-      globalSignal,
       world: raftMoveResult.world,
       raftStates: raftMoveResult.raftStates,
       savedCount,
@@ -455,7 +444,6 @@ export const stepSimulation = (
     nextSpawnTick: spawned.nextSpawnTick,
     stepCount,
     doorUnlocked,
-    globalSignal,
     world: raftMoveResult.world,
     raftStates: raftMoveResult.raftStates,
     savedCount,
