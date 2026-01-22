@@ -102,7 +102,10 @@ const buildLevel03Solution = () => {
     ['TURN_LEFT', 'MOVE_FORWARD', 'MOVE_FORWARD', 'MOVE_FORWARD', 'TURN_RIGHT'],
     nextId,
   );
-  const rightIf = buildIfBlock('lembot_wall_right', shiftLeft, nextId);
+  const advance = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const rightIf = buildIfBlock('lembot_wall_right', shiftLeft, nextId, {
+    elseBlockXml: advance,
+  });
   const alignIf = buildIfBlock('lembot_wall_left', shiftRight, nextId, {
     elseBlockXml: rightIf,
     position: { x: 24, y: 24 },
