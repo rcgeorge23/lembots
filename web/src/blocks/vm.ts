@@ -1,6 +1,6 @@
 import type { RobotAction, RobotState } from '../engine/robot';
 import { getForwardPosition, turnLeft, turnRight } from '../engine/rules';
-import { isGoal, isHazard, isWall, type World } from '../engine/world';
+import { isDoor, isGoal, isHazard, isWall, type World } from '../engine/world';
 import type { ActionNode, ConditionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
 
 export type VmStatus = 'running' | 'done' | 'step_limit';
@@ -10,6 +10,7 @@ export interface VmContext {
   robot: RobotState;
   exits: { x: number; y: number }[];
   globalSignal: boolean;
+  doorOpen: boolean;
 }
 
 interface SequenceFrame {
@@ -90,7 +91,9 @@ const evaluatePrimitiveCondition = (
   switch (condition) {
     case 'PATH_AHEAD_CLEAR': {
       const forward = getForwardPosition(robot, robot.direction);
-      return !isWall(world, forward.x, forward.y);
+      return !isWall(world, forward.x, forward.y) &&
+        !isHazard(world, forward.x, forward.y) &&
+        !(isDoor(world, forward.x, forward.y) && !context.doorOpen);
     }
     case 'ON_GOAL':
       return isOnExit;

@@ -554,6 +554,11 @@ const App = () => {
     const actions: Array<RobotAction | undefined> = [];
     const actionsByRobot = new Map<string, RobotAction>();
     let sawStepLimit = false;
+    const doorOpen = isDoorOpen(
+      currentSimulation.world,
+      currentSimulation.robots,
+      currentSimulation.doorUnlocked,
+    );
 
     currentSimulation.robots.forEach((robot) => {
       let robotVm = vmStates.get(robot.id);
@@ -572,6 +577,7 @@ const App = () => {
         robot,
         exits: currentSimulation.exits,
         globalSignal: currentSimulation.globalSignal,
+        doorOpen,
       });
       vmStates.set(robot.id, vmResult.state);
       if (vmResult.action) {
