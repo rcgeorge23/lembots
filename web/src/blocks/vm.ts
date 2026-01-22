@@ -1,7 +1,7 @@
 import type { RobotAction, RobotState } from '../engine/robot';
 import { getForwardPosition, turnLeft, turnRight } from '../engine/rules';
 import { isGoal, isHazard, isWall, type World } from '../engine/world';
-import type { ActionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
+import type { ActionNode, ConditionNode, ConditionType, ProgramNode, RepeatUntilNode } from './types';
 
 export type VmStatus = 'running' | 'done' | 'step_limit';
 
@@ -55,7 +55,32 @@ export const createVm = (program: ProgramNode, maxSteps = 200): VmState => ({
   maxSteps,
 });
 
-const evaluateCondition = (condition: ConditionType, context: VmContext): boolean => {
+const evaluateCondition = (condition: ConditionNode, context: VmContext): boolean => {
+  if (condition.kind === 'not') {
+    return !evaluateCondition(condition.operand, context);
+  }
+
+  if (condition.kind === 'and') {
+    return (
+      evaluateCondition(condition.left, context) &&
+      evaluateCondition(condition.right, context)
+    );
+  }
+
+  if (condition.kind === 'or') {
+    return (
+      evaluateCondition(condition.left, context) ||
+      evaluateCondition(condition.right, context)
+    );
+  }
+
+  return evaluatePrimitiveCondition(condition.condition, context);
+};
+
+const evaluatePrimitiveCondition = (
+  condition: ConditionType,
+  context: VmContext,
+): boolean => {
   const { world, robot, exits, globalSignal } = context;
   const isOnExit =
     exits.length > 0

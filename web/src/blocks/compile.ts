@@ -1,28 +1,50 @@
 import * as Blockly from 'blockly';
-import type { AstNode, ConditionType, ProgramNode } from './types';
+import type { AstNode, ConditionNode, ProgramNode } from './types';
 
-const compileCondition = (block: Blockly.Block | null): ConditionType => {
+const compileCondition = (block: Blockly.Block | null): ConditionNode => {
   if (!block) {
     throw new Error('Missing condition block.');
   }
 
   switch (block.type) {
     case 'lembot_path_ahead_clear':
-      return 'PATH_AHEAD_CLEAR';
+      return { kind: 'primitive', condition: 'PATH_AHEAD_CLEAR' };
     case 'lembot_on_goal':
-      return 'ON_GOAL';
+      return { kind: 'primitive', condition: 'ON_GOAL' };
     case 'lembot_hazard_ahead':
-      return 'HAZARD_AHEAD';
+      return { kind: 'primitive', condition: 'HAZARD_AHEAD' };
     case 'lembot_hazard_right':
-      return 'HAZARD_RIGHT';
+      return { kind: 'primitive', condition: 'HAZARD_RIGHT' };
     case 'lembot_wall_right':
-      return 'WALL_RIGHT';
+      return { kind: 'primitive', condition: 'WALL_RIGHT' };
     case 'lembot_hazard_left':
-      return 'HAZARD_LEFT';
+      return { kind: 'primitive', condition: 'HAZARD_LEFT' };
     case 'lembot_wall_left':
-      return 'WALL_LEFT';
+      return { kind: 'primitive', condition: 'WALL_LEFT' };
     case 'lembot_signal_active':
-      return 'GLOBAL_SIGNAL_ON';
+      return { kind: 'primitive', condition: 'GLOBAL_SIGNAL_ON' };
+    case 'lembot_logic_not': {
+      const operandBlock = block.getInputTargetBlock('OPERAND');
+      return { kind: 'not', operand: compileCondition(operandBlock) };
+    }
+    case 'lembot_logic_and': {
+      const leftBlock = block.getInputTargetBlock('LEFT');
+      const rightBlock = block.getInputTargetBlock('RIGHT');
+      return {
+        kind: 'and',
+        left: compileCondition(leftBlock),
+        right: compileCondition(rightBlock),
+      };
+    }
+    case 'lembot_logic_or': {
+      const leftBlock = block.getInputTargetBlock('LEFT');
+      const rightBlock = block.getInputTargetBlock('RIGHT');
+      return {
+        kind: 'or',
+        left: compileCondition(leftBlock),
+        right: compileCondition(rightBlock),
+      };
+    }
     default:
       throw new Error(`Unsupported condition block: ${block.type}`);
   }

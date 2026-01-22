@@ -169,6 +169,55 @@ const CONDITION_BLOCKS = [
     output: 'Boolean',
     colour: 30,
   },
+  {
+    type: 'lembot_logic_not',
+    message0: 'not %1',
+    args0: [
+      {
+        type: 'input_value',
+        name: 'OPERAND',
+        check: 'Boolean',
+      },
+    ],
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_logic_and',
+    message0: '%1 and %2',
+    args0: [
+      {
+        type: 'input_value',
+        name: 'LEFT',
+        check: 'Boolean',
+      },
+      {
+        type: 'input_value',
+        name: 'RIGHT',
+        check: 'Boolean',
+      },
+    ],
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
+    type: 'lembot_logic_or',
+    message0: '%1 or %2',
+    args0: [
+      {
+        type: 'input_value',
+        name: 'LEFT',
+        check: 'Boolean',
+      },
+      {
+        type: 'input_value',
+        name: 'RIGHT',
+        check: 'Boolean',
+      },
+    ],
+    output: 'Boolean',
+    colour: 30,
+  },
 ] as const;
 
 export const registerBlocks = (): void => {
