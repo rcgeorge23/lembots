@@ -57,6 +57,19 @@ const buildRepeatUntilBlock = (
     '</block>';
 };
 
+const buildRepeatBlock = (
+  count: number,
+  bodyBlockXml: string,
+  nextId: () => string,
+  position?: { x: number; y: number },
+): string => {
+  const attrs = position ? ` x="${position.x}" y="${position.y}"` : '';
+  return `<block type="lembot_repeat" id="${nextId()}"${attrs}>` +
+    `<field name="COUNT">${count}</field>` +
+    `<statement name="DO">${bodyBlockXml}</statement>` +
+    '</block>';
+};
+
 const buildIfBlock = (
   conditionType: string,
   thenBlockXml: string,
@@ -74,13 +87,13 @@ const buildIfBlock = (
 
 const buildLevel01Solution = () => {
   const nextId = createIdFactory('level-01');
-  return wrapXml(
-    buildActionBlocks(
-      repeatAction('MOVE_FORWARD', 5),
-      nextId,
-      { x: 24, y: 24 },
-    ),
+  const repeatMove = buildRepeatBlock(
+    5,
+    buildActionBlocks(['MOVE_FORWARD'], nextId),
+    nextId,
+    { x: 24, y: 24 },
   );
+  return wrapXml(repeatMove);
 };
 
 const buildLevel02Solution = () => {
@@ -110,119 +123,135 @@ const buildLevel03Solution = () => {
     elseBlockXml: rightIf,
     position: { x: 24, y: 24 },
   });
-  const routeBlocks = buildActionBlocks(
-    [
-      ...repeatAction('MOVE_FORWARD', 4),
-      'MOVE_FORWARD',
-      'MOVE_FORWARD',
-      'TURN_RIGHT',
-      ...repeatAction('MOVE_FORWARD', 3),
-      'TURN_LEFT',
-      ...repeatAction('MOVE_FORWARD', 2),
-    ],
-    nextId,
-  );
+  const routeMoves = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const routeTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const routeAdvance = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const routeExitTurn = buildActionBlocks(['TURN_LEFT'], nextId);
+  const routeFinish = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let routeBlocks = insertNext(routeMoves, routeTurn);
+  routeBlocks = insertNext(routeBlocks, routeAdvance);
+  routeBlocks = insertNext(routeBlocks, routeExitTurn);
+  routeBlocks = insertNext(routeBlocks, routeFinish);
   return wrapXml(insertNext(alignIf, routeBlocks));
 };
 
 const buildLevel04Solution = () => {
   const nextId = createIdFactory('level-04');
-  const actions: SolutionAction[] = [
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_LEFT',
-    ...repeatAction('MOVE_FORWARD', 4),
-    'TURN_LEFT',
-    'MOVE_FORWARD',
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 2),
-    'TURN_RIGHT',
-    'MOVE_FORWARD',
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId, { x: 24, y: 24 });
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const hallway = buildRepeatBlock(4, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeftAgain = buildActionBlocks(['TURN_LEFT'], nextId);
+  const moveForward = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const turnRightAgain = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finalStride = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const finalTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finalMove = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  let chain = insertNext(turnRight, stride);
+  chain = insertNext(chain, turnLeft);
+  chain = insertNext(chain, hallway);
+  chain = insertNext(chain, turnLeftAgain);
+  chain = insertNext(chain, moveForward);
+  chain = insertNext(chain, turnRightAgain);
+  chain = insertNext(chain, finalStride);
+  chain = insertNext(chain, finalTurn);
+  chain = insertNext(chain, finalMove);
+  return wrapXml(chain);
 };
 
 const buildLevel05Solution = () => {
   const nextId = createIdFactory('level-05');
-  const actions: SolutionAction[] = [
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_LEFT',
-    ...repeatAction('MOVE_FORWARD', 6),
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId, { x: 24, y: 24 });
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let chain = insertNext(turnRight, stride);
+  chain = insertNext(chain, turnLeft);
+  chain = insertNext(chain, finish);
+  return wrapXml(chain);
 };
 
 const buildLevel06Solution = () => {
   const nextId = createIdFactory('level-06');
-  const actions: SolutionAction[] = [
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
+    x: 24,
+    y: 24,
+  });
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let chain = insertNext(stride, turnRight);
+  chain = insertNext(chain, finish);
+  return wrapXml(chain);
 };
 
 const buildLevel07Solution = () => {
   const nextId = createIdFactory('level-07');
-  const actions: SolutionAction[] = [
-    'TURN_LEFT',
-    'TURN_LEFT',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'TURN_LEFT',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'TURN_LEFT',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'TURN_RIGHT',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'TURN_LEFT',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'MOVE_FORWARD',
-    'TURN_RIGHT',
-    'MOVE_FORWARD',
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const spinAround = buildRepeatBlock(2, buildActionBlocks(['TURN_LEFT'], nextId), nextId, {
+    x: 24,
+    y: 24,
+  });
+  const firstStride = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const longStride = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeftAgain = buildActionBlocks(['TURN_LEFT'], nextId);
+  const shortStride = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const nextStride = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeftFinal = buildActionBlocks(['TURN_LEFT'], nextId);
+  const finalHall = buildRepeatBlock(7, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const finalTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const lastStep = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  let chain = insertNext(spinAround, firstStride);
+  chain = insertNext(chain, turnLeft);
+  chain = insertNext(chain, longStride);
+  chain = insertNext(chain, turnLeftAgain);
+  chain = insertNext(chain, shortStride);
+  chain = insertNext(chain, turnRight);
+  chain = insertNext(chain, nextStride);
+  chain = insertNext(chain, turnLeftFinal);
+  chain = insertNext(chain, finalHall);
+  chain = insertNext(chain, finalTurn);
+  chain = insertNext(chain, lastStep);
+  return wrapXml(chain);
 };
 
 const buildLevel08Solution = () => {
   const nextId = createIdFactory('level-08');
-  const actions: SolutionAction[] = [
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
+    x: 24,
+    y: 24,
+  });
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let chain = insertNext(stride, turnRight);
+  chain = insertNext(chain, finish);
+  return wrapXml(chain);
 };
 
 const buildLevel09Solution = () => {
   const nextId = createIdFactory('level-09');
-  const actions: SolutionAction[] = [
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
+    x: 24,
+    y: 24,
+  });
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let chain = insertNext(stride, turnRight);
+  chain = insertNext(chain, finish);
+  return wrapXml(chain);
 };
 
 const buildLevel10Solution = () => {
   const nextId = createIdFactory('level-10');
-  const actions: SolutionAction[] = [
-    ...repeatAction('MOVE_FORWARD', 6),
-    'TURN_RIGHT',
-    ...repeatAction('MOVE_FORWARD', 6),
-  ];
-  return wrapXml(buildActionBlocks(actions, nextId, { x: 24, y: 24 }));
+  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
+    x: 24,
+    y: 24,
+  });
+  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
+  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  let chain = insertNext(stride, turnRight);
+  chain = insertNext(chain, finish);
+  return wrapXml(chain);
 };
 
 export const levelSolutionXmlById: Record<string, string> = {
