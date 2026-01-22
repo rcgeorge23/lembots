@@ -373,6 +373,8 @@ const App = () => {
   const replayIndexRef = useRef(0);
   const lastRunRef = useRef<Array<Array<RobotAction | undefined>>>([]);
   const currentActionRef = useRef<RobotAction | null>(null);
+  const isRunningRef = useRef(isRunning);
+  const isReplayingRef = useRef(isReplaying);
   const simStageRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const tileBubbleRef = useRef<HTMLDivElement | null>(null);
@@ -445,6 +447,14 @@ const App = () => {
   useEffect(() => {
     currentActionRef.current = currentAction;
   }, [currentAction]);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
+
+  useEffect(() => {
+    isReplayingRef.current = isReplaying;
+  }, [isReplaying]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -833,8 +843,30 @@ const App = () => {
       theme: blocklyTheme,
     });
     workspaceRef.current = workspace;
+    const handleWorkspaceChange = (event: Blockly.Events.Abstract) => {
+      if (event.type === Blockly.Events.UI || workspace.isDragging()) {
+        return;
+      }
+      if (
+        vmStatesRef.current.size === 0 &&
+        !isRunningRef.current &&
+        !isReplayingRef.current
+      ) {
+        return;
+      }
+      setIsRunning(false);
+      setIsReplaying(false);
+      vmStatesRef.current = new Map();
+      runActionsRef.current = [];
+      traceRef.current = [];
+      setActionTrace([]);
+      setCurrentAction(null);
+      setVmState(null);
+    };
+    workspace.addChangeListener(handleWorkspaceChange);
 
     return () => {
+      workspace.removeChangeListener(handleWorkspaceChange);
       workspace.dispose();
       workspaceRef.current = null;
     };
