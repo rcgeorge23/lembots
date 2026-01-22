@@ -103,25 +103,19 @@ const evaluatePrimitiveCondition = (
       const forward = getForwardPosition(robot, robot.direction);
       return isHazard(world, forward.x, forward.y);
     }
-    case 'HAZARD_RIGHT': {
+    case 'RIGHT_CLEAR': {
       const rightDirection = turnRight(robot.direction);
       const right = getForwardPosition(robot, rightDirection);
-      return isHazard(world, right.x, right.y);
+      return !isWall(world, right.x, right.y) &&
+        !isHazard(world, right.x, right.y) &&
+        !(isDoor(world, right.x, right.y) && !context.doorOpen);
     }
-    case 'WALL_RIGHT': {
-      const rightDirection = turnRight(robot.direction);
-      const right = getForwardPosition(robot, rightDirection);
-      return isWall(world, right.x, right.y);
-    }
-    case 'HAZARD_LEFT': {
+    case 'LEFT_CLEAR': {
       const leftDirection = turnLeft(robot.direction);
       const left = getForwardPosition(robot, leftDirection);
-      return isHazard(world, left.x, left.y);
-    }
-    case 'WALL_LEFT': {
-      const leftDirection = turnLeft(robot.direction);
-      const left = getForwardPosition(robot, leftDirection);
-      return isWall(world, left.x, left.y);
+      return !isWall(world, left.x, left.y) &&
+        !isHazard(world, left.x, left.y) &&
+        !(isDoor(world, left.x, left.y) && !context.doorOpen);
     }
     case 'GLOBAL_SIGNAL_ON':
       return globalSignal;

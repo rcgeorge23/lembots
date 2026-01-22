@@ -5,10 +5,8 @@ export type ConditionType =
   | 'ON_GOAL'
   | 'ON_PRESSURE_PLATE'
   | 'HAZARD_AHEAD'
-  | 'HAZARD_RIGHT'
-  | 'WALL_RIGHT'
-  | 'HAZARD_LEFT'
-  | 'WALL_LEFT'
+  | 'RIGHT_CLEAR'
+  | 'LEFT_CLEAR'
   | 'GLOBAL_SIGNAL_ON';
 
 export type ConditionNode =
