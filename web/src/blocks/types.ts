@@ -4,7 +4,6 @@ export type ConditionType =
   | 'PATH_AHEAD_CLEAR'
   | 'ON_GOAL'
   | 'ON_PRESSURE_PLATE'
-  | 'HAZARD_AHEAD'
   | 'RIGHT_CLEAR'
   | 'LEFT_CLEAR'
   | 'GLOBAL_SIGNAL_ON';

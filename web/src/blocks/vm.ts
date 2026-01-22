@@ -99,10 +99,6 @@ const evaluatePrimitiveCondition = (
       return isOnExit;
     case 'ON_PRESSURE_PLATE':
       return isPressurePlate(world, robot.x, robot.y);
-    case 'HAZARD_AHEAD': {
-      const forward = getForwardPosition(robot, robot.direction);
-      return isHazard(world, forward.x, forward.y);
-    }
     case 'RIGHT_CLEAR': {
       const rightDirection = turnRight(robot.direction);
       const right = getForwardPosition(robot, rightDirection);
