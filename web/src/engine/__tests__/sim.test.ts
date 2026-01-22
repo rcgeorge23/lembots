@@ -89,6 +89,8 @@ describe('simulation rules', () => {
     const next = stepSimulation(sim, ['MOVE_FORWARD']);
 
     expect(next.status).toBe('won');
+    expect(next.robots).toHaveLength(0);
+    expect(next.savedCount).toBe(1);
   });
 
   it('loses when the exit quota is not met after all robots finish', () => {
