@@ -10,6 +10,12 @@ export type ConditionType =
   | 'WALL_LEFT'
   | 'GLOBAL_SIGNAL_ON';
 
+export type ConditionNode =
+  | { kind: 'primitive'; condition: ConditionType }
+  | { kind: 'not'; operand: ConditionNode }
+  | { kind: 'and'; left: ConditionNode; right: ConditionNode }
+  | { kind: 'or'; left: ConditionNode; right: ConditionNode };
+
 export interface ActionNode {
   type: 'action';
   action: RobotAction;
@@ -25,14 +31,14 @@ export interface RepeatNode {
 
 export interface RepeatUntilNode {
   type: 'repeat_until';
-  condition: ConditionType;
+  condition: ConditionNode;
   body: ProgramNode;
   blockId: string;
 }
 
 export interface IfNode {
   type: 'if';
-  condition: ConditionType;
+  condition: ConditionNode;
   thenBranch: ProgramNode;
   elseBranch?: ProgramNode;
   blockId: string;
