@@ -9,7 +9,6 @@ export interface VmContext {
   world: World;
   robot: RobotState;
   exits: { x: number; y: number }[];
-  globalSignal: boolean;
   doorOpen: boolean;
 }
 
@@ -82,7 +81,7 @@ const evaluatePrimitiveCondition = (
   condition: ConditionType,
   context: VmContext,
 ): boolean => {
-  const { world, robot, exits, globalSignal } = context;
+  const { world, robot, exits } = context;
   const isOnExit =
     exits.length > 0
       ? exits.some((exit) => exit.x === robot.x && exit.y === robot.y)
@@ -113,8 +112,6 @@ const evaluatePrimitiveCondition = (
         !isHazard(world, left.x, left.y) &&
         !(isDoor(world, left.x, left.y) && !context.doorOpen);
     }
-    case 'GLOBAL_SIGNAL_ON':
-      return globalSignal;
     default:
       return false;
   }

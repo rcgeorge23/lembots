@@ -30,8 +30,6 @@ const actionIndicatorLabels: Record<RobotAction, string> = {
   TURN_LEFT: 'LEFT',
   TURN_RIGHT: 'RIGHT',
   WAIT: 'WAIT',
-  SIGNAL_ON: 'SIGNAL ON',
-  SIGNAL_OFF: 'SIGNAL OFF',
 };
 
 interface RobotAnimState {
