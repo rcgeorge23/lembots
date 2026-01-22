@@ -152,7 +152,24 @@
     "y": 11,
     "dir": 0,
     "count": 3,
-    "intervalTicks": 4
+    "intervalTicks": 0,
+    "starts": [
+      {
+        "x": 1,
+        "y": 11,
+        "dir": 0
+      },
+      {
+        "x": 4,
+        "y": 11,
+        "dir": 0
+      },
+      {
+        "x": 7,
+        "y": 11,
+        "dir": 0
+      }
+    ]
   },
   "exits": [
     {
