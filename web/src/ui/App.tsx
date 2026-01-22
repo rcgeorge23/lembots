@@ -38,6 +38,7 @@ import level10 from '../levels/builtin/level-10.json';
 
 const TILE_SIZE = 32;
 const COMPLETED_LEVELS_STORAGE_KEY = 'lembots.completedLevels';
+const LAST_PROGRAM_STORAGE_KEY = 'lembots.lastProgram';
 const defaultSpeedMs = 500;
 const fastForwardSpeedMs = defaultSpeedMs / 2;
 const speedOptions = [
@@ -291,6 +292,28 @@ const loadCompletedLevels = (): string[] => {
   }
 
   return [];
+};
+
+const loadStoredProgram = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(LAST_PROGRAM_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  return stored;
+};
+
+const saveStoredProgram = (workspace: Blockly.WorkspaceSvg) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+  window.localStorage.setItem(LAST_PROGRAM_STORAGE_KEY, xml);
 };
 
 const App = () => {
@@ -843,10 +866,19 @@ const App = () => {
       theme: blocklyTheme,
     });
     workspaceRef.current = workspace;
+    const storedProgram = loadStoredProgram();
+    if (storedProgram) {
+      try {
+        Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(storedProgram), workspace);
+      } catch (error) {
+        console.warn('Unable to restore program from local storage.', error);
+      }
+    }
     const handleWorkspaceChange = (event: Blockly.Events.Abstract) => {
       if (event.type === Blockly.Events.UI || workspace.isDragging()) {
         return;
       }
+      saveStoredProgram(workspace);
       if (
         vmStatesRef.current.size === 0 &&
         !isRunningRef.current &&
