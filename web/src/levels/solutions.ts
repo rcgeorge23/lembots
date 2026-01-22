@@ -282,13 +282,31 @@ const buildLevel07Solution = () => {
 
 const buildLevel08Solution = () => {
   const nextId = createIdFactory('level-08');
-  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
-    x: 24,
-    y: 24,
-  });
-  const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
-  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  let chain = insertNext(stride, turnRight);
+  const seekPlate = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_pressure_plate', nextId),
+    buildIfBlock(
+      'lembot_path_ahead_clear',
+      buildActionBlocks(['MOVE_FORWARD'], nextId),
+      nextId,
+      { elseBlockXml: buildActionBlocks(['TURN_RIGHT'], nextId) },
+    ),
+    nextId,
+    {
+      x: 24,
+      y: 24,
+    },
+  );
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const strideToDoor = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const turnLeftAgain = buildActionBlocks(['TURN_LEFT'], nextId);
+  const finish = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_goal', nextId),
+    buildActionBlocks(['MOVE_FORWARD'], nextId),
+    nextId,
+  );
+  let chain = insertNext(seekPlate, turnLeft);
+  chain = insertNext(chain, strideToDoor);
+  chain = insertNext(chain, turnLeftAgain);
   chain = insertNext(chain, finish);
   return wrapXml(chain);
 };
