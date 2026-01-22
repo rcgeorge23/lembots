@@ -238,6 +238,8 @@ const drawThumbnailJetty = (
   ctx.restore();
 };
 
+const positionKey = (x: number, y: number): string => `${x},${y}`;
+
 interface LevelDefinition {
   id: string;
   name: string;
@@ -570,6 +572,12 @@ const App = () => {
       currentSimulation.robots,
       currentSimulation.doorUnlocked,
     );
+    const occupiedPositions = new Set<string>();
+    currentSimulation.robots.forEach((robot) => {
+      if (robot.alive && !robot.reachedGoal) {
+        occupiedPositions.add(positionKey(robot.x, robot.y));
+      }
+    });
 
     currentSimulation.robots.forEach((robot) => {
       let robotVm = vmStates.get(robot.id);
@@ -588,6 +596,7 @@ const App = () => {
         robot,
         exits: currentSimulation.exits,
         doorOpen,
+        occupiedPositions,
       });
       vmStates.set(robot.id, vmResult.state);
       if (vmResult.action) {

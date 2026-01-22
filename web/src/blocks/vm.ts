@@ -10,6 +10,7 @@ export interface VmContext {
   robot: RobotState;
   exits: { x: number; y: number }[];
   doorOpen: boolean;
+  occupiedPositions: Set<string>;
 }
 
 interface SequenceFrame {
@@ -92,7 +93,8 @@ const evaluatePrimitiveCondition = (
       const forward = getForwardPosition(robot, robot.direction);
       return !isWall(world, forward.x, forward.y) &&
         !isHazard(world, forward.x, forward.y) &&
-        !(isDoor(world, forward.x, forward.y) && !context.doorOpen);
+        !(isDoor(world, forward.x, forward.y) && !context.doorOpen) &&
+        !context.occupiedPositions.has(`${forward.x},${forward.y}`);
     }
     case 'ON_GOAL':
       return isOnExit;
@@ -103,14 +105,16 @@ const evaluatePrimitiveCondition = (
       const right = getForwardPosition(robot, rightDirection);
       return !isWall(world, right.x, right.y) &&
         !isHazard(world, right.x, right.y) &&
-        !(isDoor(world, right.x, right.y) && !context.doorOpen);
+        !(isDoor(world, right.x, right.y) && !context.doorOpen) &&
+        !context.occupiedPositions.has(`${right.x},${right.y}`);
     }
     case 'LEFT_CLEAR': {
       const leftDirection = turnLeft(robot.direction);
       const left = getForwardPosition(robot, leftDirection);
       return !isWall(world, left.x, left.y) &&
         !isHazard(world, left.x, left.y) &&
-        !(isDoor(world, left.x, left.y) && !context.doorOpen);
+        !(isDoor(world, left.x, left.y) && !context.doorOpen) &&
+        !context.occupiedPositions.has(`${left.x},${left.y}`);
     }
     default:
       return false;
