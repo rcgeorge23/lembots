@@ -196,18 +196,18 @@ const buildLevel03Solution = () => {
     { elseBlockXml: rightIf, position: { x: 24, y: 24 } },
   );
   const approachWater = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
+    buildNotConditionBlock('lembot_ahead_clear', nextId),
     buildActionBlocks(['MOVE_FORWARD'], nextId),
     nextId,
   );
   const waitForRaft = buildRepeatUntilBlock(
-    buildConditionBlock('lembot_path_ahead_clear', nextId),
+    buildConditionBlock('lembot_ahead_clear', nextId),
     buildActionBlocks(['WAIT'], nextId),
     nextId,
   );
   const moveOntoRaft = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const approachWall = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
+    buildNotConditionBlock('lembot_ahead_clear', nextId),
     buildActionBlocks(['MOVE_FORWARD'], nextId),
     nextId,
   );
@@ -310,7 +310,7 @@ const buildLevel08Solution = () => {
   const seekPlate = buildRepeatUntilBlock(
     buildConditionBlock('lembot_on_pressure_plate', nextId),
     buildIfBlock(
-      'lembot_path_ahead_clear',
+      'lembot_ahead_clear',
       buildActionBlocks(['MOVE_FORWARD'], nextId),
       nextId,
       { elseBlockXml: buildActionBlocks(['TURN_RIGHT'], nextId) },
@@ -368,7 +368,7 @@ const buildGeneralSolution = () => {
   const forward = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
   const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
-  const proceed = buildIfBlock('lembot_path_ahead_clear', forward, nextId, {
+  const proceed = buildIfBlock('lembot_ahead_clear', forward, nextId, {
     elseBlockXml: turnLeft,
   });
   const wallFollower = buildIfBlockWithCondition(
@@ -378,7 +378,7 @@ const buildGeneralSolution = () => {
     { elseBlockXml: turnRight },
   );
   const avoidHazard = buildIfBlockWithCondition(
-    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
+    buildNotConditionBlock('lembot_ahead_clear', nextId),
     hazardWait,
     nextId,
     {
