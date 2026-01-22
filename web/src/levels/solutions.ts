@@ -18,6 +18,14 @@ const createIdFactory = (prefix: string) => {
 const wrapXml = (content: string) =>
   `<xml xmlns="https://developers.google.com/blockly/xml">${content}</xml>`;
 
+const buildConditionBlock = (conditionType: string, nextId: () => string): string =>
+  `<block type="${conditionType}" id="${nextId()}" />`;
+
+const buildNotConditionBlock = (conditionType: string, nextId: () => string): string =>
+  `<block type="lembot_logic_not" id="${nextId()}">` +
+  `<value name="OPERAND">${buildConditionBlock(conditionType, nextId)}</value>` +
+  '</block>';
+
 const buildActionBlocks = (
   actions: SolutionAction[],
   nextId: () => string,
@@ -77,14 +85,14 @@ const insertNext = (blockXml: string, nextXml?: string): string => {
 };
 
 const buildRepeatUntilBlock = (
-  conditionType: string,
+  conditionBlockXml: string,
   bodyBlockXml: string,
   nextId: () => string,
   position?: { x: number; y: number },
 ): string => {
   const attrs = position ? ` x="${position.x}" y="${position.y}"` : '';
   return `<block type="lembot_repeat_until" id="${nextId()}"${attrs}>` +
-    `<value name="CONDITION"><block type="${conditionType}" id="${nextId()}" /></value>` +
+    `<value name="CONDITION">${conditionBlockXml}</value>` +
     `<statement name="DO">${bodyBlockXml}</statement>` +
     '</block>';
 };
@@ -133,7 +141,12 @@ const buildLevel02Solution = () => {
   const thenXml = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const elseXml = buildActionBlocks(['TURN_RIGHT', 'MOVE_FORWARD', 'TURN_LEFT'], nextId);
   const ifBlock = buildIfBlock('lembot_wall_right', thenXml, nextId, { elseBlockXml: elseXml });
-  const repeatUntil = buildRepeatUntilBlock('lembot_on_goal', ifBlock, nextId, { x: 24, y: 24 });
+  const repeatUntil = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_goal', nextId),
+    ifBlock,
+    nextId,
+    { x: 24, y: 24 },
+  );
   return wrapXml(repeatUntil);
 };
 
@@ -157,12 +170,30 @@ const buildLevel03Solution = () => {
     elseBlockXml: rightIf,
     position: { x: 24, y: 24 },
   });
-  const routeMoves = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
+  const approachWater = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_hazard_ahead', nextId),
+    buildActionBlocks(['MOVE_FORWARD'], nextId),
+    nextId,
+  );
+  const waitForRaft = buildRepeatUntilBlock(
+    buildNotConditionBlock('lembot_hazard_ahead', nextId),
+    buildActionBlocks(['WAIT'], nextId),
+    nextId,
+  );
+  const moveOntoRaft = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const approachWall = buildRepeatUntilBlock(
+    buildNotConditionBlock('lembot_path_ahead_clear', nextId),
+    buildActionBlocks(['MOVE_FORWARD'], nextId),
+    nextId,
+  );
   const routeTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
   const routeAdvance = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
   const routeExitTurn = buildActionBlocks(['TURN_LEFT'], nextId);
   const routeFinish = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  let routeBlocks = insertNext(routeMoves, routeTurn);
+  let routeBlocks = insertNext(approachWater, waitForRaft);
+  routeBlocks = insertNext(routeBlocks, moveOntoRaft);
+  routeBlocks = insertNext(routeBlocks, approachWall);
+  routeBlocks = insertNext(routeBlocks, routeTurn);
   routeBlocks = insertNext(routeBlocks, routeAdvance);
   routeBlocks = insertNext(routeBlocks, routeExitTurn);
   routeBlocks = insertNext(routeBlocks, routeFinish);
