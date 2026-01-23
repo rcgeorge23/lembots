@@ -524,6 +524,7 @@ const App = () => {
   const isRunningRef = useRef(isRunning);
   const isReplayingRef = useRef(isReplaying);
   const simStageRef = useRef<HTMLDivElement | null>(null);
+  const designerPanelRef = useRef<HTMLElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const tileBubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -571,6 +572,14 @@ const App = () => {
     workspace.scrollCenter();
     saveStoredProgram(workspace);
   }, [currentSolutionXml]);
+
+  const handleOpenDesignerFromLevels = useCallback(() => {
+    setIsLevelsOpen(false);
+    setIsEditorOpen(false);
+    window.setTimeout(() => {
+      designerPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }, []);
 
   const handleClearWorkspace = useCallback(() => {
     const workspace = workspaceRef.current;
@@ -1815,7 +1824,11 @@ const App = () => {
             </div>
           </div>
         </section>
-        <section className="panel panel--designer" aria-label="Level designer">
+        <section
+          className="panel panel--designer"
+          aria-label="Level designer"
+          ref={designerPanelRef}
+        >
           <div className="panel__header">
             <h2>Level Designer</h2>
             <div className="panel__header-actions">
@@ -2134,6 +2147,14 @@ const App = () => {
             Unlock all levels
           </label>
         </div>
+        <button
+          type="button"
+          className="levels-strip__designer-button"
+          onClick={handleOpenDesignerFromLevels}
+          aria-label="Open level designer"
+        >
+          🧩 Open level designer
+        </button>
         <div className="levels__grid">
           {levels.map((level, index) => {
             const previousLevel = levels[index - 1];
