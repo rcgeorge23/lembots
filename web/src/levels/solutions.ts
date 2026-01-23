@@ -331,15 +331,28 @@ const buildLevel09Solution = () => {
 
 const buildLevel10Solution = () => {
   const nextId = createIdFactory('level-10');
-  const stride = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId, {
-    x: 24,
-    y: 24,
-  });
+  const wait = buildActionBlocks(['WAIT'], nextId);
+  const moveForward = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const turnRight = buildActionBlocks(['TURN_RIGHT'], nextId);
-  const finish = buildRepeatBlock(6, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  let chain = insertNext(stride, turnRight);
-  chain = insertNext(chain, finish);
-  return wrapXml(chain);
+  const raftExit = buildIfBlock('lembot_ahead_clear', moveForward, nextId, {
+    elseBlockXml: wait,
+  });
+  const forwardOrTurn = buildIfBlock('lembot_ahead_clear', moveForward, nextId, {
+    elseBlockXml: turnRight,
+  });
+  const raftIf = buildIfBlock('lembot_on_raft', raftExit, nextId, {
+    elseBlockXml: forwardOrTurn,
+  });
+  const plateIf = buildIfBlock('lembot_on_pressure_plate', wait, nextId, {
+    elseBlockXml: raftIf,
+    position: { x: 24, y: 24 },
+  });
+  const loop = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_goal', nextId),
+    plateIf,
+    nextId,
+  );
+  return wrapXml(loop);
 };
 
 const buildGeneralSolution = () => {
