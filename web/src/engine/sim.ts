@@ -139,6 +139,8 @@ const listPositionsForTile = (world: World, tileType: TileType): Position[] => {
   return positions;
 };
 
+const positionKey = (x: number, y: number): string => `${x},${y}`;
+
 const buildRaftRoute = (origin: Position, jettyPositions: Position[]): Position[] => {
   const sortedJetties = sortPositions(jettyPositions).filter(
     (jetty) => jetty.x !== origin.x || jetty.y !== origin.y,
@@ -187,16 +189,24 @@ export const createSimulation = ({
 const isBlockingRobot = (robot: RobotState): boolean =>
   robot.alive && !robot.reachedGoal;
 
-export const isPressurePlatePressed = (world: World, robots: RobotState[]): boolean =>
-  robots.some((robot) => isBlockingRobot(robot) && isPressurePlate(world, robot.x, robot.y));
+export const isPressurePlatePressed = (world: World, robots: RobotState[]): boolean => {
+  const plates = listPositionsForTile(world, TileType.PressurePlate);
+  if (plates.length === 0) {
+    return false;
+  }
+  const occupied = new Set(
+    robots
+      .filter(isBlockingRobot)
+      .map((robot) => positionKey(robot.x, robot.y)),
+  );
+  return plates.every((plate) => occupied.has(positionKey(plate.x, plate.y)));
+};
 
 export const isDoorOpen = (
   world: World,
   robots: RobotState[],
   doorUnlocked = false,
 ): boolean => doorUnlocked || isPressurePlatePressed(world, robots);
-
-const positionKey = (x: number, y: number): string => `${x},${y}`;
 
 const buildOccupiedPositions = (robots: RobotState[]): Set<string> =>
   new Set(robots.filter(isBlockingRobot).map((robot) => positionKey(robot.x, robot.y)));
@@ -346,7 +356,7 @@ export const stepSimulation = (
   const spawned = spawnNextRobot(state, occupied);
   const nextOccupied = buildOccupiedPositions(spawned.robots);
   const platePressed = isPressurePlatePressed(state.world, spawned.robots);
-  const doorOpen = isDoorOpen(state.world, spawned.robots, state.doorUnlocked);
+  const doorOpen = isDoorOpen(state.world, spawned.robots);
   const isBlocked = (x: number, y: number) =>
     isWall(state.world, x, y) || (isDoor(state.world, x, y) && !doorOpen);
   let nextRobots = spawned.robots.map((robot, index) => {
@@ -384,10 +394,7 @@ export const stepSimulation = (
   );
   const { activeRobots, savedCount: savedThisStep } = splitRobotsByGoal(raftAdjustedRobots);
   const savedCount = state.savedCount + savedThisStep;
-  const doorUnlocked =
-    state.doorUnlocked ||
-    platePressed ||
-    isPressurePlatePressed(raftMoveResult.world, activeRobots);
+  const doorUnlocked = isPressurePlatePressed(raftMoveResult.world, activeRobots);
   const stepCount = state.stepCount + 1;
   const hasActiveRobot = activeRobots.some((robot) => robot.alive);
   const hasRemainingSpawns = spawned.spawnedCount < state.spawner.count;
