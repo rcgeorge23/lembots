@@ -200,12 +200,16 @@ const buildLevel03Solution = () => {
     buildActionBlocks(['MOVE_FORWARD'], nextId),
     nextId,
   );
-  const waitForRaft = buildRepeatUntilBlock(
-    buildConditionBlock('lembot_ahead_clear', nextId),
-    buildActionBlocks(['WAIT'], nextId),
+  const boardRaft = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_raft', nextId),
+    buildIfBlockWithCondition(
+      buildConditionBlock('lembot_ahead_clear', nextId),
+      buildActionBlocks(['MOVE_FORWARD'], nextId),
+      nextId,
+      { elseBlockXml: buildActionBlocks(['WAIT'], nextId) },
+    ),
     nextId,
   );
-  const moveOntoRaft = buildActionBlocks(['MOVE_FORWARD'], nextId);
   const approachWall = buildRepeatUntilBlock(
     buildNotConditionBlock('lembot_ahead_clear', nextId),
     buildActionBlocks(['MOVE_FORWARD'], nextId),
@@ -215,8 +219,7 @@ const buildLevel03Solution = () => {
   const routeAdvance = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
   const routeExitTurn = buildActionBlocks(['TURN_LEFT'], nextId);
   const routeFinish = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  let routeBlocks = insertNext(approachWater, waitForRaft);
-  routeBlocks = insertNext(routeBlocks, moveOntoRaft);
+  let routeBlocks = insertNext(approachWater, boardRaft);
   routeBlocks = insertNext(routeBlocks, approachWall);
   routeBlocks = insertNext(routeBlocks, routeTurn);
   routeBlocks = insertNext(routeBlocks, routeAdvance);

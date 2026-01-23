@@ -2,6 +2,7 @@ import type { RobotAction } from '../engine/robot';
 
 export type ConditionType =
   | 'AHEAD_CLEAR'
+  | 'ON_RAFT'
   | 'ON_GOAL'
   | 'ON_PRESSURE_PLATE'
   | 'RIGHT_CLEAR'
