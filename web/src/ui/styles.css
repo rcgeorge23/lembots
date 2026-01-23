@@ -208,6 +208,7 @@ body {
   display: flex;
   align-items: stretch;
   justify-content: center;
+  --stage-counter-rotation: 0deg;
 }
 
 .sim-stage canvas {
@@ -231,6 +232,7 @@ body {
   .sim-stage {
     transform: rotate(90deg);
     transform-origin: center;
+    --stage-counter-rotation: -90deg;
   }
 }
 
@@ -243,6 +245,8 @@ body {
   border-radius: 10px;
   padding: 20px;
   z-index: 4;
+  transform: rotate(var(--stage-counter-rotation));
+  transform-origin: center;
 }
 
 .robot-bubble {
@@ -256,11 +260,14 @@ body {
   padding: 12px 14px 14px;
   box-shadow: 0 16px 24px rgba(2, 6, 23, 0.55);
   color: var(--panel-highlight);
-  transform: translate(calc(-50% + var(--bubble-shift, 0px)), -110%);
+  transform: translate(calc(-50% + var(--bubble-shift, 0px)), -110%)
+    rotate(var(--stage-counter-rotation));
+  transform-origin: center;
 }
 
 .robot-bubble--below {
-  transform: translate(calc(-50% + var(--bubble-shift, 0px)), 14%);
+  transform: translate(calc(-50% + var(--bubble-shift, 0px)), 14%)
+    rotate(var(--stage-counter-rotation));
 }
 
 .robot-bubble::after {
