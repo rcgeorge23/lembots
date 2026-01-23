@@ -1048,6 +1048,7 @@ const App = () => {
   const mobilePlayPauseIcon = isBusy ? '❚❚' : '▶';
   const hasReplay = lastRunActions.length > 0;
   const hasNextLevel = levelIndex + 1 < levels.length;
+  const isFinalLevelWin = simulation.status === 'won' && !hasNextLevel;
   const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
   const isFastForward = speedMs === fastForwardSpeedMs;
   const showOverlay = (simulation.status === 'won' || simulation.status === 'lost') && !isReplaying;
@@ -1377,23 +1378,42 @@ const App = () => {
                 <div className={`sim-overlay sim-overlay--${simulation.status}`}>
                   <div className="sim-overlay__card">
                     <p className="sim-overlay__eyebrow">
-                      {simulation.status === 'won' ? 'Level Complete' : 'Try Again'}
+                      {simulation.status === 'won'
+                        ? isFinalLevelWin
+                          ? 'All Levels Complete'
+                          : 'Level Complete'
+                        : 'Try Again'}
                     </p>
                     <h3>
                       {simulation.status === 'won'
-                        ? 'Exit reached!'
+                        ? isFinalLevelWin
+                          ? 'You did it!'
+                          : 'Exit reached!'
                         : 'Robots lost in the maze.'}
                     </h3>
                     <p className="sim-overlay__hint">
                       {simulation.status === 'won'
-                        ? `Saved ${savedCount} of ${simulation.requiredSaved} robots.`
+                        ? isFinalLevelWin
+                          ? 'Congratulations, you completed every level! Want to play this one again or head back to the beginning?'
+                          : `Saved ${savedCount} of ${simulation.requiredSaved} robots.`
                         : failMessage}
                     </p>
                     <div className="sim-overlay__actions">
-                      {simulation.status === 'won' && hasNextLevel ? (
-                        <button type="button" onClick={() => loadLevel(levelIndex + 1)}>
-                          Next Level
-                        </button>
+                      {simulation.status === 'won' ? (
+                        hasNextLevel ? (
+                          <button type="button" onClick={() => loadLevel(levelIndex + 1)}>
+                            Next Level
+                          </button>
+                        ) : (
+                          <>
+                            <button type="button" onClick={handleReset}>
+                              Play Again
+                            </button>
+                            <button type="button" onClick={() => loadLevel(0)}>
+                              Back to Level 1
+                            </button>
+                          </>
+                        )
                       ) : (
                         <button type="button" onClick={handleReset}>
                           Reset
