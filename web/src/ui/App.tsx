@@ -572,6 +572,17 @@ const App = () => {
     saveStoredProgram(workspace);
   }, [currentSolutionXml]);
 
+  const handleClearWorkspace = useCallback(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) {
+      return;
+    }
+
+    workspace.clear();
+    workspace.scrollCenter();
+    saveStoredProgram(workspace);
+  }, []);
+
 
   useEffect(() => {
     simulationRef.current = simulation;
@@ -1592,6 +1603,9 @@ const App = () => {
                 disabled={!currentSolutionXml}
               >
                 Load Solution
+              </button>
+              <button type="button" className="panel__action" onClick={handleClearWorkspace}>
+                Clear
               </button>
               <button
                 type="button"
