@@ -172,65 +172,26 @@ const buildLevel02Solution = () => {
 
 const buildLevel03Solution = () => {
   const nextId = createIdFactory('level-03');
-  const buildStride = () =>
-    buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  const shiftRight = insertNext(
-    buildActionBlocks(['TURN_RIGHT'], nextId),
-    insertNext(buildStride(), buildActionBlocks(['TURN_LEFT'], nextId)),
-  );
-  const shiftLeft = insertNext(
-    buildActionBlocks(['TURN_LEFT'], nextId),
-    insertNext(buildStride(), buildActionBlocks(['TURN_RIGHT'], nextId)),
-  );
-  const advance = buildActionBlocks(['MOVE_FORWARD'], nextId);
-  const rightIf = buildIfBlockWithCondition(
-    buildNotConditionBlock('lembot_right_clear', nextId),
-    shiftLeft,
+  const onRaftActions = buildActionBlocks(['WAIT', 'WAIT', 'MOVE_FORWARD'], nextId);
+  const rightActions = buildActionBlocks(['TURN_RIGHT', 'MOVE_FORWARD'], nextId);
+  const aheadActions = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const elseActions = buildActionBlocks(['TURN_LEFT'], nextId);
+  const aheadIf = buildIfBlock('lembot_ahead_clear', aheadActions, nextId, {
+    elseBlockXml: elseActions,
+  });
+  const rightIf = buildIfBlock('lembot_right_clear', rightActions, nextId, {
+    elseBlockXml: aheadIf,
+  });
+  const raftIf = buildIfBlock('lembot_on_raft', onRaftActions, nextId, {
+    elseBlockXml: rightIf,
+  });
+  const repeatUntilGoal = buildRepeatUntilBlock(
+    buildConditionBlock('lembot_on_goal', nextId),
+    raftIf,
     nextId,
-    { elseBlockXml: advance },
+    { x: 24, y: 24 },
   );
-  const alignIf = buildIfBlockWithCondition(
-    buildNotConditionBlock('lembot_left_clear', nextId),
-    shiftRight,
-    nextId,
-    { elseBlockXml: rightIf, position: { x: 24, y: 24 } },
-  );
-  const approachWater = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_ahead_clear', nextId),
-    buildActionBlocks(['MOVE_FORWARD'], nextId),
-    nextId,
-  );
-  const boardRaft = buildRepeatUntilBlock(
-    buildConditionBlock('lembot_on_raft', nextId),
-    buildIfBlockWithCondition(
-      buildConditionBlock('lembot_ahead_clear', nextId),
-      buildActionBlocks(['MOVE_FORWARD'], nextId),
-      nextId,
-      { elseBlockXml: buildActionBlocks(['WAIT'], nextId) },
-    ),
-    nextId,
-  );
-  const leaveRaft = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_on_raft', nextId),
-    buildIfBlockWithCondition(
-      buildConditionBlock('lembot_ahead_clear', nextId),
-      buildActionBlocks(['MOVE_FORWARD'], nextId),
-      nextId,
-      { elseBlockXml: buildActionBlocks(['WAIT'], nextId) },
-    ),
-    nextId,
-  );
-  const routeTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
-  const routeAdvance = buildRepeatBlock(3, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  const routeExitTurn = buildActionBlocks(['TURN_LEFT'], nextId);
-  const routeFinish = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
-  let routeBlocks = insertNext(approachWater, boardRaft);
-  routeBlocks = insertNext(routeBlocks, leaveRaft);
-  routeBlocks = insertNext(routeBlocks, routeTurn);
-  routeBlocks = insertNext(routeBlocks, routeAdvance);
-  routeBlocks = insertNext(routeBlocks, routeExitTurn);
-  routeBlocks = insertNext(routeBlocks, routeFinish);
-  return wrapXml(insertNext(alignIf, routeBlocks));
+  return wrapXml(repeatUntilGoal);
 };
 
 const buildLevel04Solution = () => {
