@@ -120,6 +120,12 @@ const CONDITION_BLOCKS = [
     colour: 30,
   },
   {
+    type: 'lembot_on_raft',
+    message0: 'on raft?',
+    output: 'Boolean',
+    colour: 30,
+  },
+  {
     type: 'lembot_on_pressure_plate',
     message0: 'on pressure plate?',
     output: 'Boolean',
