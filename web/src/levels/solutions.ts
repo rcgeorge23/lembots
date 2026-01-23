@@ -210,9 +210,14 @@ const buildLevel03Solution = () => {
     ),
     nextId,
   );
-  const approachWall = buildRepeatUntilBlock(
-    buildNotConditionBlock('lembot_ahead_clear', nextId),
-    buildActionBlocks(['MOVE_FORWARD'], nextId),
+  const leaveRaft = buildRepeatUntilBlock(
+    buildNotConditionBlock('lembot_on_raft', nextId),
+    buildIfBlockWithCondition(
+      buildConditionBlock('lembot_ahead_clear', nextId),
+      buildActionBlocks(['MOVE_FORWARD'], nextId),
+      nextId,
+      { elseBlockXml: buildActionBlocks(['WAIT'], nextId) },
+    ),
     nextId,
   );
   const routeTurn = buildActionBlocks(['TURN_RIGHT'], nextId);
@@ -220,7 +225,7 @@ const buildLevel03Solution = () => {
   const routeExitTurn = buildActionBlocks(['TURN_LEFT'], nextId);
   const routeFinish = buildRepeatBlock(2, buildActionBlocks(['MOVE_FORWARD'], nextId), nextId);
   let routeBlocks = insertNext(approachWater, boardRaft);
-  routeBlocks = insertNext(routeBlocks, approachWall);
+  routeBlocks = insertNext(routeBlocks, leaveRaft);
   routeBlocks = insertNext(routeBlocks, routeTurn);
   routeBlocks = insertNext(routeBlocks, routeAdvance);
   routeBlocks = insertNext(routeBlocks, routeExitTurn);
