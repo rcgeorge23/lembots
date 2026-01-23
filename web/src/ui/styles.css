@@ -92,7 +92,8 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-areas:
     'sim sim'
-    'editor controls';
+    'editor controls'
+    'designer designer';
   align-items: start;
 }
 
@@ -226,6 +227,10 @@ body {
 
 .panel--controls {
   grid-area: controls;
+}
+
+.panel--designer {
+  grid-area: designer;
 }
 
 @media (min-width: 901px) {
@@ -1032,6 +1037,195 @@ body {
   font-size: 0.85rem;
 }
 
+.designer__intro {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.designer__layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.designer__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.designer__group h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.designer__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.designer-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.4);
+  color: var(--panel-highlight);
+  cursor: pointer;
+  text-align: left;
+}
+
+.designer-tile.is-selected {
+  border-color: var(--panel-accent);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.5);
+}
+
+.designer-tile__swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #0f172a;
+  flex-shrink: 0;
+}
+
+.designer-tile__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.designer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.designer__field input,
+.designer__field select,
+.designer__field textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 8px;
+  color: var(--panel-highlight);
+  padding: 6px 8px;
+  font-family: inherit;
+}
+
+.designer__field--inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.designer__field--inline label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.designer__note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.designer__workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.designer-grid {
+  display: grid;
+  gap: 2px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.designer-cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #0f172a;
+}
+
+.designer__output {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.designer__output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.designer__output textarea {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+}
+
+.designer-cell[data-tile='0'],
+.designer-tile__swatch[data-tile='0'] {
+  background: #1f2937;
+}
+
+.designer-cell[data-tile='1'],
+.designer-tile__swatch[data-tile='1'] {
+  background: #475569;
+}
+
+.designer-cell[data-tile='2'],
+.designer-tile__swatch[data-tile='2'] {
+  background: #22c55e;
+}
+
+.designer-cell[data-tile='3'],
+.designer-tile__swatch[data-tile='3'] {
+  background: #ef4444;
+}
+
+.designer-cell[data-tile='4'],
+.designer-tile__swatch[data-tile='4'] {
+  background: #f59e0b;
+}
+
+.designer-cell[data-tile='5'],
+.designer-tile__swatch[data-tile='5'] {
+  background: #0f172a;
+  border: 1px solid #94a3b8;
+}
+
+.designer-cell[data-tile='6'],
+.designer-tile__swatch[data-tile='6'] {
+  background: #38bdf8;
+}
+
+.designer-cell[data-tile='7'],
+.designer-tile__swatch[data-tile='7'] {
+  background: #a16207;
+}
+
+.designer-cell[data-tile='8'],
+.designer-tile__swatch[data-tile='8'] {
+  background: #facc15;
+}
+
 .panel-backdrop,
 .mobile-console,
 .mobile-editor-toggle {
@@ -1068,6 +1262,7 @@ body {
     grid-template-columns: 1fr;
     grid-template-areas:
       'sim'
+      'designer'
       'editor'
       'controls';
     flex: 1;
@@ -1083,6 +1278,10 @@ body {
 
   .panel--controls {
     display: none;
+  }
+
+  .designer__layout {
+    grid-template-columns: 1fr;
   }
 
   .panel--editor {

@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type PointerEvent,
 } from 'react';
 import * as Blockly from 'blockly';
@@ -109,6 +110,34 @@ const tileInfoByType: Record<TileType, { title: string; description: string }> =
     description: 'Impassable wall tile.',
   },
 };
+const designerTileOptions: Array<{ type: TileType; label: string; description: string }> = [
+  { type: TileType.Empty, label: 'Floor', description: 'Open floor tile.' },
+  { type: TileType.Wall, label: 'Wall', description: 'Impassable wall tile.' },
+  { type: TileType.Goal, label: 'Goal', description: 'Exit beacon for saved bots.' },
+  { type: TileType.Hazard, label: 'Hazard', description: 'Destroys bots on contact.' },
+  { type: TileType.PressurePlate, label: 'Plate', description: 'Activates doors while pressed.' },
+  { type: TileType.Door, label: 'Door', description: 'Blocks bots unless powered.' },
+  { type: TileType.Water, label: 'Water', description: 'Bots sink in water.' },
+  { type: TileType.Raft, label: 'Raft', description: 'Floating transport across water.' },
+  { type: TileType.Jetty, label: 'Jetty', description: 'Dock for rafts to stop.' },
+];
+const designerTileLabelByType: Record<TileType, string> = {
+  [TileType.Empty]: 'Floor',
+  [TileType.Wall]: 'Wall',
+  [TileType.Goal]: 'Goal',
+  [TileType.Hazard]: 'Hazard',
+  [TileType.PressurePlate]: 'Plate',
+  [TileType.Door]: 'Door',
+  [TileType.Water]: 'Water',
+  [TileType.Raft]: 'Raft',
+  [TileType.Jetty]: 'Jetty',
+};
+const designerDirections: Array<{ label: string; value: 'N' | 'E' | 'S' | 'W' }> = [
+  { label: 'North', value: 'N' },
+  { label: 'East', value: 'E' },
+  { label: 'South', value: 'S' },
+  { label: 'West', value: 'W' },
+];
 const thumbnailTileSize = 12;
 const thumbnailDoorFill = '#1e293b';
 const thumbnailPlateFill = '#f59e0b';
@@ -116,6 +145,8 @@ const thumbnailRaftFill = '#b45309';
 const thumbnailRaftStroke = '#7c2d12';
 const thumbnailJettyFill = '#a16207';
 const thumbnailJettyStroke = '#78350f';
+const designerDefaultWidth = 12;
+const designerDefaultHeight = 10;
 
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
@@ -133,6 +164,24 @@ const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction =>
     default:
       return 1;
   }
+};
+
+const createDesignerGrid = (width: number, height: number): number[][] =>
+  Array.from({ length: height }, () => Array.from({ length: width }, () => TileType.Empty));
+
+const clampNumber = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
+const listDesignerPositions = (grid: number[][], tileType: TileType): Array<{ x: number; y: number }> => {
+  const positions: Array<{ x: number; y: number }> = [];
+  grid.forEach((row, y) => {
+    row.forEach((cell, x) => {
+      if (cell === tileType) {
+        positions.push({ x, y });
+      }
+    });
+  });
+  return positions;
 };
 
 const drawThumbnailPlate = (
@@ -353,6 +402,65 @@ const App = () => {
     });
   }, []);
 
+  const resizeDesignerGrid = useCallback((nextWidth: number, nextHeight: number) => {
+    setDesignerGrid((prev) =>
+      Array.from({ length: nextHeight }, (_, rowIndex) =>
+        Array.from({ length: nextWidth }, (_, colIndex) => {
+          const existingRow = prev[rowIndex];
+          return existingRow?.[colIndex] ?? TileType.Empty;
+        }),
+      ),
+    );
+  }, []);
+
+  const handleDesignerWidthChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextWidth = clampNumber(Number(event.target.value) || 4, 4, 24);
+      setDesignerWidth(nextWidth);
+      resizeDesignerGrid(nextWidth, designerHeight);
+    },
+    [designerHeight, resizeDesignerGrid],
+  );
+
+  const handleDesignerHeightChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextHeight = clampNumber(Number(event.target.value) || 4, 4, 24);
+      setDesignerHeight(nextHeight);
+      resizeDesignerGrid(designerWidth, nextHeight);
+    },
+    [designerWidth, resizeDesignerGrid],
+  );
+
+  const handleDesignerCellClick = useCallback(
+    (col: number, row: number) => {
+      setDesignerGrid((prev) =>
+        prev.map((gridRow, rowIndex) =>
+          rowIndex === row
+            ? gridRow.map((cell, colIndex) =>
+                colIndex === col ? designerTile : cell,
+              )
+            : gridRow,
+        ),
+      );
+    },
+    [designerTile],
+  );
+
+  const handleDesignerCopy = useCallback(async (content: string) => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      setDesignerCopyStatus('error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(content);
+      setDesignerCopyStatus('copied');
+      window.setTimeout(() => setDesignerCopyStatus('idle'), 2000);
+    } catch (error) {
+      console.warn('Unable to copy level JSON.', error);
+      setDesignerCopyStatus('error');
+    }
+  }, []);
+
   const [levelIndex, setLevelIndex] = useState(0);
   const [simulation, setSimulation] = useState<SimulationState>(() =>
     createSimulationForLevel(levels[0]),
@@ -387,6 +495,20 @@ const App = () => {
   } | null>(null);
   const [tileBubbleShift, setTileBubbleShift] = useState(0);
   const [tileBubblePointerOffset, setTileBubblePointerOffset] = useState(0);
+  const [designerWidth, setDesignerWidth] = useState(designerDefaultWidth);
+  const [designerHeight, setDesignerHeight] = useState(designerDefaultHeight);
+  const [designerGrid, setDesignerGrid] = useState<number[][]>(() =>
+    createDesignerGrid(designerDefaultWidth, designerDefaultHeight),
+  );
+  const [designerTile, setDesignerTile] = useState<TileType>(TileType.Wall);
+  const [designerSpawnerCount, setDesignerSpawnerCount] = useState(3);
+  const [designerRequiredSaved, setDesignerRequiredSaved] = useState(1);
+  const [designerSpawnX, setDesignerSpawnX] = useState(1);
+  const [designerSpawnY, setDesignerSpawnY] = useState(1);
+  const [designerSpawnDir, setDesignerSpawnDir] = useState<'N' | 'E' | 'S' | 'W'>('E');
+  const [designerCopyStatus, setDesignerCopyStatus] = useState<'idle' | 'copied' | 'error'>(
+    'idle',
+  );
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
   const currentLevel = levels[levelIndex];
@@ -1158,6 +1280,54 @@ const App = () => {
   const platePressed = isPressurePlatePressed(simulation.world, simulation.robots);
   const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
 
+  useEffect(() => {
+    setDesignerSpawnX((value) => clampNumber(value, 0, Math.max(designerWidth - 1, 0)));
+    setDesignerSpawnY((value) => clampNumber(value, 0, Math.max(designerHeight - 1, 0)));
+  }, [designerHeight, designerWidth]);
+
+  useEffect(() => {
+    setDesignerRequiredSaved((value) =>
+      clampNumber(value, 1, Math.max(designerSpawnerCount, 1)),
+    );
+  }, [designerSpawnerCount]);
+
+  const designerExits = useMemo(
+    () => listDesignerPositions(designerGrid, TileType.Goal),
+    [designerGrid],
+  );
+  const designerLevelJson = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          id: 'custom-level',
+          name: 'Custom Level',
+          difficulty: 1,
+          grid: designerGrid,
+          spawner: {
+            x: designerSpawnX,
+            y: designerSpawnY,
+            dir: designerSpawnDir,
+            count: designerSpawnerCount,
+            intervalTicks: 0,
+          },
+          exits: designerExits,
+          requiredSaved: designerRequiredSaved,
+          maxTicks: 200,
+        },
+        null,
+        2,
+      ),
+    [
+      designerExits,
+      designerGrid,
+      designerRequiredSaved,
+      designerSpawnDir,
+      designerSpawnX,
+      designerSpawnY,
+      designerSpawnerCount,
+    ],
+  );
+
   const getBubbleShift = useCallback(
     (bubbleEl: HTMLDivElement | null, currentShift = 0) => {
       const stageEl = simStageRef.current;
@@ -1629,6 +1799,201 @@ const App = () => {
                 </ol>
               )}
             </div>
+          </div>
+        </section>
+        <section className="panel panel--designer" aria-label="Level designer">
+          <div className="panel__header">
+            <h2>Level Designer</h2>
+            <div className="panel__header-actions">
+              <button
+                type="button"
+                className="panel__action"
+                onClick={() => setDesignerGrid(createDesignerGrid(designerWidth, designerHeight))}
+              >
+                Clear Grid
+              </button>
+            </div>
+          </div>
+          <p className="designer__intro">
+            Paint tiles, set how many bots start, and copy the JSON into a new level file.
+          </p>
+          <div className="designer__layout">
+            <div className="designer__sidebar">
+              <div className="designer__group">
+                <h3>Tiles</h3>
+                <div className="designer__tiles">
+                  {designerTileOptions.map((option) => (
+                    <button
+                      key={option.type}
+                      type="button"
+                      className={`designer-tile${
+                        designerTile === option.type ? ' is-selected' : ''
+                      }`}
+                      onClick={() => setDesignerTile(option.type)}
+                      title={option.description}
+                    >
+                      <span className="designer-tile__swatch" data-tile={option.type} />
+                      <span className="designer-tile__label">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="designer__group">
+                <h3>Layout</h3>
+                <label className="designer__field">
+                  Width
+                  <input
+                    type="number"
+                    min={4}
+                    max={24}
+                    value={designerWidth}
+                    onChange={handleDesignerWidthChange}
+                  />
+                </label>
+                <label className="designer__field">
+                  Height
+                  <input
+                    type="number"
+                    min={4}
+                    max={24}
+                    value={designerHeight}
+                    onChange={handleDesignerHeightChange}
+                  />
+                </label>
+              </div>
+              <div className="designer__group">
+                <h3>Spawner</h3>
+                <label className="designer__field">
+                  Bots start
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={designerSpawnerCount}
+                    onChange={(event) =>
+                      setDesignerSpawnerCount(
+                        clampNumber(Number(event.target.value) || 1, 1, 20),
+                      )
+                    }
+                  />
+                </label>
+                <label className="designer__field">
+                  Bots to save
+                  <input
+                    type="number"
+                    min={1}
+                    max={designerSpawnerCount}
+                    value={designerRequiredSaved}
+                    onChange={(event) =>
+                      setDesignerRequiredSaved(
+                        clampNumber(
+                          Number(event.target.value) || 1,
+                          1,
+                          Math.max(designerSpawnerCount, 1),
+                        ),
+                      )
+                    }
+                  />
+                </label>
+                <div className="designer__field designer__field--inline">
+                  <label>
+                    Spawn X
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.max(designerWidth - 1, 0)}
+                      value={designerSpawnX}
+                      onChange={(event) =>
+                        setDesignerSpawnX(
+                          clampNumber(
+                            Number(event.target.value) || 0,
+                            0,
+                            Math.max(designerWidth - 1, 0),
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    Spawn Y
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.max(designerHeight - 1, 0)}
+                      value={designerSpawnY}
+                      onChange={(event) =>
+                        setDesignerSpawnY(
+                          clampNumber(
+                            Number(event.target.value) || 0,
+                            0,
+                            Math.max(designerHeight - 1, 0),
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                </div>
+                <label className="designer__field">
+                  Spawn facing
+                  <select
+                    value={designerSpawnDir}
+                    onChange={(event) =>
+                      setDesignerSpawnDir(event.target.value as 'N' | 'E' | 'S' | 'W')
+                    }
+                  >
+                    {designerDirections.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="designer__group">
+                <h3>Exits</h3>
+                <p className="designer__note">
+                  Goal tiles act as exits. Placed: {designerExits.length}
+                </p>
+              </div>
+            </div>
+            <div className="designer__workspace">
+              <div
+                className="designer-grid"
+                style={{ gridTemplateColumns: `repeat(${designerWidth}, minmax(0, 1fr))` }}
+              >
+                {designerGrid.map((row, rowIndex) =>
+                  row.map((cell, colIndex) => (
+                    <button
+                      key={`${rowIndex}-${colIndex}`}
+                      type="button"
+                      className="designer-cell"
+                      data-tile={cell}
+                      onClick={() => handleDesignerCellClick(colIndex, rowIndex)}
+                      aria-label={`Row ${rowIndex + 1}, column ${colIndex + 1}, ${
+                        designerTileLabelByType[cell as TileType]
+                      }`}
+                    />
+                  )),
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="designer__output">
+            <div className="designer__output-header">
+              <h3>Level JSON</h3>
+              <button
+                type="button"
+                className="panel__action"
+                onClick={() => handleDesignerCopy(designerLevelJson)}
+              >
+                {designerCopyStatus === 'copied'
+                  ? 'Copied!'
+                  : designerCopyStatus === 'error'
+                    ? 'Copy failed'
+                    : 'Copy JSON'}
+              </button>
+            </div>
+            <textarea readOnly value={designerLevelJson} rows={12} />
           </div>
         </section>
       </main>
