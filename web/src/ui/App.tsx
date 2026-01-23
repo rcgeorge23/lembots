@@ -1056,6 +1056,8 @@ const App = () => {
   }, [selectedRobotId, simulation.robots]);
 
   const isBusy = isRunning || isReplaying;
+  const mobilePlayPauseLabel = isBusy ? (isReplaying ? 'Stop replay' : 'Pause') : 'Run';
+  const mobilePlayPauseIcon = isBusy ? '❚❚' : '▶';
   const hasReplay = lastRunActions.length > 0;
   const hasNextLevel = levelIndex + 1 < levels.length;
   const activeSpeedOption = speedOptions.find((option) => option.value === speedMs);
@@ -1673,22 +1675,21 @@ const App = () => {
           </div>
         </div>
         <div className="mobile-console__actions">
-          <button type="button" onClick={handleRun} disabled={isBusy} aria-label="Run">
-            <span className="mobile-console__icon" aria-hidden="true">
-              ▶
-            </span>
-            <span className="sr-only">Run</span>
-          </button>
           <button
             type="button"
-            onClick={handlePause}
-            disabled={!isBusy}
-            aria-label={isReplaying ? 'Stop replay' : 'Pause'}
+            onClick={() => {
+              if (isBusy) {
+                handlePause();
+                return;
+              }
+              handleRun();
+            }}
+            aria-label={mobilePlayPauseLabel}
           >
             <span className="mobile-console__icon" aria-hidden="true">
-              {isReplaying ? '■' : '❚❚'}
+              {mobilePlayPauseIcon}
             </span>
-            <span className="sr-only">{isReplaying ? 'Stop replay' : 'Pause'}</span>
+            <span className="sr-only">{mobilePlayPauseLabel}</span>
           </button>
           <button
             type="button"
