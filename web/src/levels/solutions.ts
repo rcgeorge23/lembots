@@ -348,17 +348,21 @@ const buildLevel09Solution = () => {
 
 const buildLevel10Solution = () => {
   const nextId = createIdFactory('level-10');
-  const onRaftActions = buildActionBlocks(['WAIT', 'WAIT', 'MOVE_FORWARD'], nextId);
-  const rightActions = buildActionBlocks(['TURN_RIGHT', 'MOVE_FORWARD'], nextId);
-  const aheadActions = buildActionBlocks(['MOVE_FORWARD'], nextId);
-  const elseActions = buildActionBlocks(['TURN_LEFT'], nextId);
-  const aheadIf = buildIfBlock('lembot_ahead_clear', aheadActions, nextId, {
-    elseBlockXml: elseActions,
+  const raftForward = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const raftWait = buildActionBlocks(['WAIT'], nextId);
+  const raftAheadIf = buildIfBlock('lembot_ahead_clear', raftForward, nextId, {
+    elseBlockXml: raftWait,
   });
-  const rightIf = buildIfBlock('lembot_right_clear', rightActions, nextId, {
+  const rightTurnMove = buildActionBlocks(['TURN_RIGHT', 'MOVE_FORWARD'], nextId);
+  const aheadMove = buildActionBlocks(['MOVE_FORWARD'], nextId);
+  const turnLeft = buildActionBlocks(['TURN_LEFT'], nextId);
+  const aheadIf = buildIfBlock('lembot_ahead_clear', aheadMove, nextId, {
+    elseBlockXml: turnLeft,
+  });
+  const rightIf = buildIfBlock('lembot_right_clear', rightTurnMove, nextId, {
     elseBlockXml: aheadIf,
   });
-  const raftIf = buildIfBlock('lembot_on_raft', onRaftActions, nextId, {
+  const raftIf = buildIfBlock('lembot_on_raft', raftAheadIf, nextId, {
     elseBlockXml: rightIf,
   });
   const repeatUntilGoal = buildRepeatUntilBlock(
