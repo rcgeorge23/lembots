@@ -430,6 +430,12 @@ const App = () => {
 
   const [designerWidth, setDesignerWidth] = useState(designerDefaultWidth);
   const [designerHeight, setDesignerHeight] = useState(designerDefaultHeight);
+  const [designerWidthInput, setDesignerWidthInput] = useState(
+    String(designerDefaultWidth),
+  );
+  const [designerHeightInput, setDesignerHeightInput] = useState(
+    String(designerDefaultHeight),
+  );
   const [designerGrid, setDesignerGrid] = useState<number[][]>(() =>
     createDesignerGrid(designerDefaultWidth, designerDefaultHeight),
   );
@@ -448,7 +454,15 @@ const App = () => {
 
   const handleDesignerWidthChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      const nextWidth = clampNumber(Number(event.target.value) || 4, 4, 24);
+      const nextValue = event.target.value;
+      setDesignerWidthInput(nextValue);
+      if (!/^\d+$/.test(nextValue)) {
+        return;
+      }
+      const nextWidth = Number(nextValue);
+      if (nextWidth <= 0) {
+        return;
+      }
       setDesignerWidth(nextWidth);
       resizeDesignerGrid(nextWidth, designerHeight);
     },
@@ -457,12 +471,28 @@ const App = () => {
 
   const handleDesignerHeightChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      const nextHeight = clampNumber(Number(event.target.value) || 4, 4, 24);
+      const nextValue = event.target.value;
+      setDesignerHeightInput(nextValue);
+      if (!/^\d+$/.test(nextValue)) {
+        return;
+      }
+      const nextHeight = Number(nextValue);
+      if (nextHeight <= 0) {
+        return;
+      }
       setDesignerHeight(nextHeight);
       resizeDesignerGrid(designerWidth, nextHeight);
     },
     [designerWidth, resizeDesignerGrid],
   );
+
+  useEffect(() => {
+    setDesignerWidthInput(String(designerWidth));
+  }, [designerWidth]);
+
+  useEffect(() => {
+    setDesignerHeightInput(String(designerHeight));
+  }, [designerHeight]);
 
   const handleDesignerCellClick = useCallback(
     (col: number, row: number) => {
@@ -2101,21 +2131,21 @@ const App = () => {
                 <label className="designer__field">
                   Width
                   <input
-                    type="number"
-                    min={4}
-                    max={24}
-                    value={designerWidth}
+                    type="text"
+                    inputMode="numeric"
+                    value={designerWidthInput}
                     onChange={handleDesignerWidthChange}
+                    onBlur={() => setDesignerWidthInput(String(designerWidth))}
                   />
                 </label>
                 <label className="designer__field">
                   Height
                   <input
-                    type="number"
-                    min={4}
-                    max={24}
-                    value={designerHeight}
+                    type="text"
+                    inputMode="numeric"
+                    value={designerHeightInput}
                     onChange={handleDesignerHeightChange}
+                    onBlur={() => setDesignerHeightInput(String(designerHeight))}
                   />
                 </label>
               </div>
