@@ -1055,6 +1055,26 @@ body {
   color: var(--text-muted);
 }
 
+.designer__level-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.designer__level-select select {
+  min-width: 180px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  color: var(--panel-highlight);
+  padding: 6px 8px;
+  font-family: inherit;
+}
+
 .designer__layout {
   display: grid;
   grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
