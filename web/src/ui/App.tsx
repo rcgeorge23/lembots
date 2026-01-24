@@ -132,12 +132,6 @@ const designerTileLabelByType: Record<TileType, string> = {
   [TileType.Raft]: 'Raft',
   [TileType.Jetty]: 'Jetty',
 };
-const designerDirections: Array<{ label: string; value: 'N' | 'E' | 'S' | 'W' }> = [
-  { label: 'North', value: 'N' },
-  { label: 'East', value: 'E' },
-  { label: 'South', value: 'S' },
-  { label: 'West', value: 'W' },
-];
 const thumbnailTileSize = 12;
 const thumbnailDoorFill = '#1e293b';
 const thumbnailPlateFill = '#f59e0b';
@@ -184,6 +178,27 @@ const designerDirectionFromValue = (
     default:
       return 'E';
   }
+};
+
+const rotateDesignerDirection = (direction: 'N' | 'E' | 'S' | 'W'): 'N' | 'E' | 'S' | 'W' => {
+  switch (direction) {
+    case 'N':
+      return 'E';
+    case 'E':
+      return 'S';
+    case 'S':
+      return 'W';
+    case 'W':
+    default:
+      return 'N';
+  }
+};
+
+const designerRotationDegrees: Record<'N' | 'E' | 'S' | 'W', number> = {
+  N: 0,
+  E: 90,
+  S: 180,
+  W: 270,
 };
 
 const createDesignerGrid = (width: number, height: number): number[][] =>
@@ -494,24 +509,6 @@ const App = () => {
     setDesignerHeightInput(String(designerHeight));
   }, [designerHeight]);
 
-  const handleDesignerCellClick = useCallback(
-    (col: number, row: number) => {
-      setDesignerGrid((prev) =>
-        prev.map((gridRow, rowIndex) =>
-          rowIndex === row
-            ? gridRow.map((cell, colIndex) => {
-                if (colIndex !== col) {
-                  return cell;
-                }
-                return cell === designerTile ? TileType.Empty : designerTile;
-              })
-            : gridRow,
-        ),
-      );
-    },
-    [designerTile],
-  );
-
   const handleDesignerCopy = useCallback(async (content: string) => {
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
       setDesignerCopyStatus('error');
@@ -561,12 +558,13 @@ const App = () => {
   } | null>(null);
   const [tileBubbleShift, setTileBubbleShift] = useState(0);
   const [tileBubblePointerOffset, setTileBubblePointerOffset] = useState(0);
-  const [designerSpawnerCount, setDesignerSpawnerCount] = useState(3);
   const [designerRequiredSaved, setDesignerRequiredSaved] = useState(1);
-  const [designerSpawnX, setDesignerSpawnX] = useState(1);
-  const [designerSpawnY, setDesignerSpawnY] = useState(1);
-  const [designerSpawnDir, setDesignerSpawnDir] = useState<'N' | 'E' | 'S' | 'W'>('E');
-  const [designerSpawnStarts, setDesignerSpawnStarts] = useState<DesignerSpawnStart[]>([]);
+  const [designerSpawnStarts, setDesignerSpawnStarts] = useState<DesignerSpawnStart[]>([
+    { x: 1, y: 1, dir: 'E' },
+  ]);
+  const [designerSpawnRotations, setDesignerSpawnRotations] = useState<number[]>([0]);
+  const [designerTool, setDesignerTool] = useState<'tiles' | 'bots'>('tiles');
+  const [designerCellSize, setDesignerCellSize] = useState(0);
   const [designerSourceLevelId, setDesignerSourceLevelId] = useState('');
   const [designerCopyStatus, setDesignerCopyStatus] = useState<'idle' | 'copied' | 'error'>(
     'idle',
@@ -583,6 +581,14 @@ const App = () => {
       })),
     [],
   );
+  const designerSpawnerCount = designerSpawnStarts.length;
+  const designerSpawnStartsByPosition = useMemo(() => {
+    const map = new Map<string, { index: number; start: DesignerSpawnStart }>();
+    designerSpawnStarts.forEach((start, index) => {
+      map.set(`${start.x},${start.y}`, { index, start });
+    });
+    return map;
+  }, [designerSpawnStarts]);
 
   const handleDesignerLoadFromLevel = useCallback(() => {
     if (!designerSourceLevelId) {
@@ -639,12 +645,9 @@ const App = () => {
     setDesignerWidth(nextWidth);
     setDesignerHeight(nextHeight);
     setDesignerGrid(paddedGrid);
-    setDesignerSpawnerCount(clampedSpawnerCount);
     setDesignerRequiredSaved(requiredSaved);
-    setDesignerSpawnX(clampNumber(spawnSource.x, 0, Math.max(nextWidth - 1, 0)));
-    setDesignerSpawnY(clampNumber(spawnSource.y, 0, Math.max(nextHeight - 1, 0)));
-    setDesignerSpawnDir(designerDirectionFromValue(spawnSource.dir));
     setDesignerSpawnStarts(normalizedStarts);
+    setDesignerSpawnRotations(normalizedStarts.map(() => 0));
     setDesignerCopyStatus('idle');
   }, [designerSourceLevelId]);
 
@@ -674,23 +677,66 @@ const App = () => {
         next[index] = nextStart;
         return next;
       });
-      if (index === 0) {
-        if (update.x !== undefined) {
-          setDesignerSpawnX(
-            clampNumber(update.x, 0, Math.max(designerWidth - 1, 0)),
-          );
-        }
-        if (update.y !== undefined) {
-          setDesignerSpawnY(
-            clampNumber(update.y, 0, Math.max(designerHeight - 1, 0)),
-          );
-        }
-        if (update.dir) {
-          setDesignerSpawnDir(update.dir);
-        }
-      }
     },
     [designerHeight, designerWidth],
+  );
+
+  const handleDesignerCellClick = useCallback(
+    (col: number, row: number) => {
+      const key = `${col},${row}`;
+      const existing = designerSpawnStartsByPosition.get(key);
+      if (existing) {
+        const rotationCount = designerSpawnRotations[existing.index] ?? 0;
+        if (rotationCount >= 3) {
+          setDesignerSpawnStarts((prev) =>
+            prev.filter((_, index) => index !== existing.index),
+          );
+          setDesignerSpawnRotations((prev) =>
+            prev.filter((_, index) => index !== existing.index),
+          );
+          return;
+        }
+        updateDesignerSpawnStart(existing.index, {
+          dir: rotateDesignerDirection(existing.start.dir),
+        });
+        setDesignerSpawnRotations((prev) =>
+          prev.map((value, index) =>
+            index === existing.index ? value + 1 : value,
+          ),
+        );
+        return;
+      }
+
+      if (designerTool === 'bots') {
+        if (designerSpawnStarts.length >= 20) {
+          return;
+        }
+        setDesignerSpawnStarts((prev) => [...prev, { x: col, y: row, dir: 'E' }]);
+        setDesignerSpawnRotations((prev) => [...prev, 0]);
+        return;
+      }
+
+      setDesignerGrid((prev) =>
+        prev.map((gridRow, rowIndex) =>
+          rowIndex === row
+            ? gridRow.map((cell, colIndex) => {
+                if (colIndex !== col) {
+                  return cell;
+                }
+                return cell === designerTile ? TileType.Empty : designerTile;
+              })
+            : gridRow,
+        ),
+      );
+    },
+    [
+      designerSpawnRotations,
+      designerSpawnStarts.length,
+      designerSpawnStartsByPosition,
+      designerTile,
+      designerTool,
+      updateDesignerSpawnStart,
+    ],
   );
 
   const simulationRef = useRef(simulation);
@@ -704,6 +750,7 @@ const App = () => {
   const isReplayingRef = useRef(isReplaying);
   const simStageRef = useRef<HTMLDivElement | null>(null);
   const designerPanelRef = useRef<HTMLElement | null>(null);
+  const designerGridRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const tileBubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -1480,73 +1527,28 @@ const App = () => {
   const doorOpen = isDoorOpen(simulation.world, simulation.robots, simulation.doorUnlocked);
 
   useEffect(() => {
-    setDesignerSpawnX((value) => clampNumber(value, 0, Math.max(designerWidth - 1, 0)));
-    setDesignerSpawnY((value) => clampNumber(value, 0, Math.max(designerHeight - 1, 0)));
-  }, [designerHeight, designerWidth]);
-
-  useEffect(() => {
-    setDesignerRequiredSaved((value) =>
-      clampNumber(value, 1, Math.max(designerSpawnerCount, 1)),
-    );
+    setDesignerRequiredSaved((value) => {
+      if (designerSpawnerCount <= 0) {
+        return 0;
+      }
+      return clampNumber(value, 1, Math.max(designerSpawnerCount, 1));
+    });
   }, [designerSpawnerCount]);
 
   useEffect(() => {
-    setDesignerSpawnStarts((prev) => {
-      if (designerSpawnerCount <= 0) {
-        return [];
-      }
-      const nextStarts = Array.from({ length: designerSpawnerCount }, (_, index) => {
-        const existing = prev[index];
-        const fallback = {
-          x: clampNumber(designerSpawnX + index, 0, Math.max(designerWidth - 1, 0)),
-          y: clampNumber(designerSpawnY, 0, Math.max(designerHeight - 1, 0)),
-          dir: designerSpawnDir,
-        };
-        const start = existing ?? fallback;
-        return {
-          x: clampNumber(start.x, 0, Math.max(designerWidth - 1, 0)),
-          y: clampNumber(start.y, 0, Math.max(designerHeight - 1, 0)),
-          dir: start.dir,
-        };
-      });
-      return nextStarts;
-    });
-  }, [
-    designerSpawnDir,
-    designerSpawnX,
-    designerSpawnY,
-    designerSpawnerCount,
-    designerHeight,
-    designerWidth,
-  ]);
-
-  const designerSpawnStartsForDisplay = useMemo(
-    () =>
-      Array.from({ length: designerSpawnerCount }, (_, index) => {
-        const existing = designerSpawnStarts[index];
-        if (existing) {
-          return existing;
-        }
-        return {
-          x: clampNumber(designerSpawnX + index, 0, Math.max(designerWidth - 1, 0)),
-          y: clampNumber(designerSpawnY, 0, Math.max(designerHeight - 1, 0)),
-          dir: designerSpawnDir,
-        };
-      }),
-    [
-      designerSpawnDir,
-      designerSpawnStarts,
-      designerSpawnX,
-      designerSpawnY,
-      designerSpawnerCount,
-      designerHeight,
-      designerWidth,
-    ],
-  );
+    setDesignerSpawnStarts((prev) =>
+      prev.map((start) => ({
+        x: clampNumber(start.x, 0, Math.max(designerWidth - 1, 0)),
+        y: clampNumber(start.y, 0, Math.max(designerHeight - 1, 0)),
+        dir: start.dir,
+      })),
+    );
+  }, [designerHeight, designerWidth]);
   const designerExits = useMemo(
     () => listDesignerPositions(designerGrid, TileType.Goal),
     [designerGrid],
   );
+  const designerPrimarySpawn = designerSpawnStarts[0] ?? { x: 0, y: 0, dir: 'E' };
   const designerLevelJson = useMemo(
     () =>
       JSON.stringify(
@@ -1556,15 +1558,13 @@ const App = () => {
           difficulty: 1,
           grid: designerGrid,
           spawner: {
-            x: designerSpawnX,
-            y: designerSpawnY,
-            dir: designerSpawnDir,
+            x: designerPrimarySpawn.x,
+            y: designerPrimarySpawn.y,
+            dir: designerPrimarySpawn.dir,
             count: designerSpawnerCount,
             intervalTicks: 0,
             starts:
-              designerSpawnerCount > 1
-                ? designerSpawnStartsForDisplay.slice(0, designerSpawnerCount)
-                : undefined,
+              designerSpawnerCount > 1 ? designerSpawnStarts.slice(0, designerSpawnerCount) : undefined,
           },
           exits: designerExits,
           requiredSaved: designerRequiredSaved,
@@ -1576,16 +1576,19 @@ const App = () => {
     [
       designerExits,
       designerGrid,
+      designerPrimarySpawn,
       designerRequiredSaved,
-      designerSpawnDir,
-      designerSpawnStartsForDisplay,
-      designerSpawnX,
-      designerSpawnY,
+      designerSpawnStarts,
       designerSpawnerCount,
       designerHeight,
       designerWidth,
     ],
   );
+  const designerBotFrame = renderAssets?.robotAtlas.animations.idle?.[0] ?? null;
+  const designerBotScale =
+    renderAssets && designerBotFrame && designerCellSize
+      ? designerCellSize / renderAssets.robotAtlas.frameSize
+      : 1;
 
   const getBubbleShift = useCallback(
     (bubbleEl: HTMLDivElement | null, currentShift = 0) => {
@@ -1676,6 +1679,30 @@ const App = () => {
     tileBubbleShift,
     getBubblePointerOffset,
   ]);
+
+  useLayoutEffect(() => {
+    const gridEl = designerGridRef.current;
+    if (!gridEl) {
+      return;
+    }
+
+    const updateSize = () => {
+      const rect = gridEl.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        return;
+      }
+      const nextSize = Math.min(
+        rect.width / Math.max(designerWidth, 1),
+        rect.height / Math.max(designerHeight, 1),
+      );
+      setDesignerCellSize(nextSize);
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(gridEl);
+    return () => observer.disconnect();
+  }, [designerHeight, designerWidth]);
 
   return (
     <div
@@ -2103,7 +2130,7 @@ const App = () => {
             </div>
           </div>
           <p className="designer__intro">
-            Paint tiles, set how many bots start, and copy the JSON into a new level file.
+            Paint tiles, place bot spawns, and copy the JSON into a new level file.
           </p>
           <div className="designer__layout">
             <div className="designer__sidebar">
@@ -2151,19 +2178,10 @@ const App = () => {
               </div>
               <div className="designer__group">
                 <h3>Spawner</h3>
-                <label className="designer__field">
-                  Bots start
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={designerSpawnerCount}
-                    onChange={(event) =>
-                      setDesignerSpawnerCount(
-                        clampNumber(Number(event.target.value) || 1, 1, 20),
-                      )
-                    }
-                  />
-                </label>
+                <div className="designer__field designer__field--inline">
+                  <span className="designer__spawn-label">Bots placed</span>
+                  <span className="designer__spawn-count">{designerSpawnerCount}</span>
+                </div>
                 <label className="designer__field">
                   Bots to save
                   <input
@@ -2174,121 +2192,39 @@ const App = () => {
                       setDesignerRequiredSaved(
                         clampNumber(
                           Number(event.target.value) || 1,
-                          1,
-                          Math.max(designerSpawnerCount, 1),
+                          designerSpawnerCount > 0 ? 1 : 0,
+                          Math.max(designerSpawnerCount, 0),
                         ),
                       )
                     }
                   />
                 </label>
-                <div className="designer__field designer__field--inline">
-                  <label>
-                    Spawn X
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={designerSpawnX}
-                      onChange={(event) => {
-                        const nextValue = clampNumber(
-                          Number(event.target.value) || 0,
-                          0,
-                          Math.max(designerWidth - 1, 0),
-                        );
-                        setDesignerSpawnX(nextValue);
-                        updateDesignerSpawnStart(0, { x: nextValue });
-                      }}
-                    />
-                  </label>
-                  <label>
-                    Spawn Y
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={designerSpawnY}
-                      onChange={(event) => {
-                        const nextValue = clampNumber(
-                          Number(event.target.value) || 0,
-                          0,
-                          Math.max(designerHeight - 1, 0),
-                        );
-                        setDesignerSpawnY(nextValue);
-                        updateDesignerSpawnStart(0, { y: nextValue });
-                      }}
-                    />
-                  </label>
-                </div>
-                <label className="designer__field">
-                  Spawn facing
-                  <select
-                    value={designerSpawnDir}
-                    onChange={(event) => {
-                      const nextValue = event.target.value as 'N' | 'E' | 'S' | 'W';
-                      setDesignerSpawnDir(nextValue);
-                      updateDesignerSpawnStart(0, { dir: nextValue });
-                    }}
-                  >
-                    {designerDirections.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {designerSpawnerCount > 1 && (
-                  <div className="designer__field">
-                    <p className="designer__note">Spawn points for each bot.</p>
-                    <div className="designer__spawn-list">
-                      {designerSpawnStartsForDisplay.map((start, index) => (
-                        <div key={`spawn-${index}`} className="designer__spawn-row">
-                          <span className="designer__spawn-label">Bot {index + 1}</span>
-                          <label>
-                            X
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={start.x}
-                              onChange={(event) =>
-                                updateDesignerSpawnStart(index, {
-                                  x: Number(event.target.value) || 0,
-                                })
-                              }
-                            />
-                          </label>
-                          <label>
-                            Y
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={start.y}
-                              onChange={(event) =>
-                                updateDesignerSpawnStart(index, {
-                                  y: Number(event.target.value) || 0,
-                                })
-                              }
-                            />
-                          </label>
-                          <label>
-                            Facing
-                            <select
-                              value={start.dir}
-                              onChange={(event) =>
-                                updateDesignerSpawnStart(index, {
-                                  dir: event.target.value as 'N' | 'E' | 'S' | 'W',
-                                })
-                              }
-                            >
-                              {designerDirections.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
+                <div className="designer__field">
+                  <p className="designer__note">
+                    Click the grid to place bots. Click a bot to rotate it 90°. After three
+                    rotations, click again to remove it.
+                  </p>
+                  <div className="designer__tool-toggle" role="group" aria-label="Designer tool">
+                    <button
+                      type="button"
+                      className={`designer__tool-button${
+                        designerTool === 'tiles' ? ' is-selected' : ''
+                      }`}
+                      onClick={() => setDesignerTool('tiles')}
+                    >
+                      Paint tiles
+                    </button>
+                    <button
+                      type="button"
+                      className={`designer__tool-button${
+                        designerTool === 'bots' ? ' is-selected' : ''
+                      }`}
+                      onClick={() => setDesignerTool('bots')}
+                    >
+                      Place bots
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
               <div className="designer__group">
                 <h3>Exits</h3>
@@ -2301,6 +2237,7 @@ const App = () => {
               <div
                 className="designer-grid"
                 style={{ gridTemplateColumns: `repeat(${designerWidth}, minmax(0, 1fr))` }}
+                ref={designerGridRef}
               >
                 {designerGrid.map((row, rowIndex) =>
                   row.map((cell, colIndex) => (
@@ -2313,7 +2250,35 @@ const App = () => {
                       aria-label={`Row ${rowIndex + 1}, column ${colIndex + 1}, ${
                         designerTileLabelByType[cell as TileType]
                       }`}
-                    />
+                    >
+                      {(() => {
+                        const spawnEntry = designerSpawnStartsByPosition.get(
+                          `${colIndex},${rowIndex}`,
+                        );
+                        if (!spawnEntry || !renderAssets || !designerBotFrame) {
+                          return null;
+                        }
+                        const rotation = designerRotationDegrees[spawnEntry.start.dir];
+                        const backgroundSize = `${renderAssets.robotImage.width * designerBotScale}px ${
+                          renderAssets.robotImage.height * designerBotScale
+                        }px`;
+                        const backgroundPosition = `${-designerBotFrame.x * designerBotScale}px ${
+                          -designerBotFrame.y * designerBotScale
+                        }px`;
+                        return (
+                          <span
+                            className="designer-cell__bot"
+                            aria-hidden="true"
+                            style={{
+                              backgroundImage: `url(${renderAssets.robotImage.src})`,
+                              backgroundSize,
+                              backgroundPosition,
+                              transform: `rotate(${rotation}deg)`,
+                            }}
+                          />
+                        );
+                      })()}
+                    </button>
                   )),
                 )}
               </div>
