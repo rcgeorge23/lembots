@@ -1170,6 +1170,34 @@ body {
   color: var(--text-muted);
 }
 
+.designer__spawn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.designer__spawn-row {
+  display: grid;
+  grid-template-columns: minmax(60px, 0.8fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.designer__spawn-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.designer__spawn-label {
+  font-weight: 600;
+  color: var(--panel-highlight);
+  font-size: 0.75rem;
+  align-self: center;
+}
+
 .designer__workspace {
   display: flex;
   flex-direction: column;

@@ -204,6 +204,12 @@ const listDesignerPositions = (grid: number[][], tileType: TileType): Array<{ x:
   return positions;
 };
 
+interface DesignerSpawnStart {
+  x: number;
+  y: number;
+  dir: 'N' | 'E' | 'S' | 'W';
+}
+
 const drawThumbnailPlate = (
   ctx: CanvasRenderingContext2D,
   col: number,
@@ -530,6 +536,7 @@ const App = () => {
   const [designerSpawnX, setDesignerSpawnX] = useState(1);
   const [designerSpawnY, setDesignerSpawnY] = useState(1);
   const [designerSpawnDir, setDesignerSpawnDir] = useState<'N' | 'E' | 'S' | 'W'>('E');
+  const [designerSpawnStarts, setDesignerSpawnStarts] = useState<DesignerSpawnStart[]>([]);
   const [designerSourceLevelId, setDesignerSourceLevelId] = useState('');
   const [designerCopyStatus, setDesignerCopyStatus] = useState<'idle' | 'copied' | 'error'>(
     'idle',
@@ -582,6 +589,23 @@ const App = () => {
       clampedSpawnerCount,
     );
 
+    const defaultSpawnStarts = Array.from({ length: clampedSpawnerCount }, (_, index) => ({
+      x: clampNumber(
+        spawnSource.x + index,
+        0,
+        Math.max(nextWidth - 1, 0),
+      ),
+      y: clampNumber(spawnSource.y, 0, Math.max(nextHeight - 1, 0)),
+      dir: designerDirectionFromValue(spawnSource.dir),
+    }));
+    const normalizedStarts = sourceLevel.spawner?.starts?.length
+      ? sourceLevel.spawner.starts.slice(0, clampedSpawnerCount).map((start) => ({
+          x: clampNumber(start.x, 0, Math.max(nextWidth - 1, 0)),
+          y: clampNumber(start.y, 0, Math.max(nextHeight - 1, 0)),
+          dir: designerDirectionFromValue(start.dir),
+        }))
+      : defaultSpawnStarts;
+
     setDesignerWidth(nextWidth);
     setDesignerHeight(nextHeight);
     setDesignerGrid(paddedGrid);
@@ -590,8 +614,54 @@ const App = () => {
     setDesignerSpawnX(clampNumber(spawnSource.x, 0, Math.max(nextWidth - 1, 0)));
     setDesignerSpawnY(clampNumber(spawnSource.y, 0, Math.max(nextHeight - 1, 0)));
     setDesignerSpawnDir(designerDirectionFromValue(spawnSource.dir));
+    setDesignerSpawnStarts(normalizedStarts);
     setDesignerCopyStatus('idle');
   }, [designerSourceLevelId]);
+
+  const updateDesignerSpawnStart = useCallback(
+    (index: number, update: Partial<DesignerSpawnStart>) => {
+      setDesignerSpawnStarts((prev) => {
+        if (index < 0 || index >= prev.length) {
+          return prev;
+        }
+        const next = [...prev];
+        const current = next[index];
+        const nextStart = {
+          ...current,
+          ...update,
+          x: clampNumber(
+            update.x ?? current.x,
+            0,
+            Math.max(designerWidth - 1, 0),
+          ),
+          y: clampNumber(
+            update.y ?? current.y,
+            0,
+            Math.max(designerHeight - 1, 0),
+          ),
+          dir: update.dir ?? current.dir,
+        };
+        next[index] = nextStart;
+        return next;
+      });
+      if (index === 0) {
+        if (update.x !== undefined) {
+          setDesignerSpawnX(
+            clampNumber(update.x, 0, Math.max(designerWidth - 1, 0)),
+          );
+        }
+        if (update.y !== undefined) {
+          setDesignerSpawnY(
+            clampNumber(update.y, 0, Math.max(designerHeight - 1, 0)),
+          );
+        }
+        if (update.dir) {
+          setDesignerSpawnDir(update.dir);
+        }
+      }
+    },
+    [designerHeight, designerWidth],
+  );
 
   const simulationRef = useRef(simulation);
   const vmStatesRef = useRef<Map<string, VmState>>(new Map());
@@ -1390,6 +1460,59 @@ const App = () => {
     );
   }, [designerSpawnerCount]);
 
+  useEffect(() => {
+    setDesignerSpawnStarts((prev) => {
+      if (designerSpawnerCount <= 0) {
+        return [];
+      }
+      const nextStarts = Array.from({ length: designerSpawnerCount }, (_, index) => {
+        const existing = prev[index];
+        const fallback = {
+          x: clampNumber(designerSpawnX + index, 0, Math.max(designerWidth - 1, 0)),
+          y: clampNumber(designerSpawnY, 0, Math.max(designerHeight - 1, 0)),
+          dir: designerSpawnDir,
+        };
+        const start = existing ?? fallback;
+        return {
+          x: clampNumber(start.x, 0, Math.max(designerWidth - 1, 0)),
+          y: clampNumber(start.y, 0, Math.max(designerHeight - 1, 0)),
+          dir: start.dir,
+        };
+      });
+      return nextStarts;
+    });
+  }, [
+    designerSpawnDir,
+    designerSpawnX,
+    designerSpawnY,
+    designerSpawnerCount,
+    designerHeight,
+    designerWidth,
+  ]);
+
+  const designerSpawnStartsForDisplay = useMemo(
+    () =>
+      Array.from({ length: designerSpawnerCount }, (_, index) => {
+        const existing = designerSpawnStarts[index];
+        if (existing) {
+          return existing;
+        }
+        return {
+          x: clampNumber(designerSpawnX + index, 0, Math.max(designerWidth - 1, 0)),
+          y: clampNumber(designerSpawnY, 0, Math.max(designerHeight - 1, 0)),
+          dir: designerSpawnDir,
+        };
+      }),
+    [
+      designerSpawnDir,
+      designerSpawnStarts,
+      designerSpawnX,
+      designerSpawnY,
+      designerSpawnerCount,
+      designerHeight,
+      designerWidth,
+    ],
+  );
   const designerExits = useMemo(
     () => listDesignerPositions(designerGrid, TileType.Goal),
     [designerGrid],
@@ -1408,6 +1531,10 @@ const App = () => {
             dir: designerSpawnDir,
             count: designerSpawnerCount,
             intervalTicks: 0,
+            starts:
+              designerSpawnerCount > 1
+                ? designerSpawnStartsForDisplay.slice(0, designerSpawnerCount)
+                : undefined,
           },
           exits: designerExits,
           requiredSaved: designerRequiredSaved,
@@ -1421,9 +1548,12 @@ const App = () => {
       designerGrid,
       designerRequiredSaved,
       designerSpawnDir,
+      designerSpawnStartsForDisplay,
       designerSpawnX,
       designerSpawnY,
       designerSpawnerCount,
+      designerHeight,
+      designerWidth,
     ],
   );
 
@@ -2031,15 +2161,15 @@ const App = () => {
                       min={0}
                       max={Math.max(designerWidth - 1, 0)}
                       value={designerSpawnX}
-                      onChange={(event) =>
-                        setDesignerSpawnX(
-                          clampNumber(
-                            Number(event.target.value) || 0,
-                            0,
-                            Math.max(designerWidth - 1, 0),
-                          ),
-                        )
-                      }
+                      onChange={(event) => {
+                        const nextValue = clampNumber(
+                          Number(event.target.value) || 0,
+                          0,
+                          Math.max(designerWidth - 1, 0),
+                        );
+                        setDesignerSpawnX(nextValue);
+                        updateDesignerSpawnStart(0, { x: nextValue });
+                      }}
                     />
                   </label>
                   <label>
@@ -2049,15 +2179,15 @@ const App = () => {
                       min={0}
                       max={Math.max(designerHeight - 1, 0)}
                       value={designerSpawnY}
-                      onChange={(event) =>
-                        setDesignerSpawnY(
-                          clampNumber(
-                            Number(event.target.value) || 0,
-                            0,
-                            Math.max(designerHeight - 1, 0),
-                          ),
-                        )
-                      }
+                      onChange={(event) => {
+                        const nextValue = clampNumber(
+                          Number(event.target.value) || 0,
+                          0,
+                          Math.max(designerHeight - 1, 0),
+                        );
+                        setDesignerSpawnY(nextValue);
+                        updateDesignerSpawnStart(0, { y: nextValue });
+                      }}
                     />
                   </label>
                 </div>
@@ -2065,9 +2195,11 @@ const App = () => {
                   Spawn facing
                   <select
                     value={designerSpawnDir}
-                    onChange={(event) =>
-                      setDesignerSpawnDir(event.target.value as 'N' | 'E' | 'S' | 'W')
-                    }
+                    onChange={(event) => {
+                      const nextValue = event.target.value as 'N' | 'E' | 'S' | 'W';
+                      setDesignerSpawnDir(nextValue);
+                      updateDesignerSpawnStart(0, { dir: nextValue });
+                    }}
                   >
                     {designerDirections.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -2076,6 +2208,63 @@ const App = () => {
                     ))}
                   </select>
                 </label>
+                {designerSpawnerCount > 1 && (
+                  <div className="designer__field">
+                    <p className="designer__note">Spawn points for each bot.</p>
+                    <div className="designer__spawn-list">
+                      {designerSpawnStartsForDisplay.map((start, index) => (
+                        <div key={`spawn-${index}`} className="designer__spawn-row">
+                          <span className="designer__spawn-label">Bot {index + 1}</span>
+                          <label>
+                            X
+                            <input
+                              type="number"
+                              min={0}
+                              max={Math.max(designerWidth - 1, 0)}
+                              value={start.x}
+                              onChange={(event) =>
+                                updateDesignerSpawnStart(index, {
+                                  x: Number(event.target.value) || 0,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Y
+                            <input
+                              type="number"
+                              min={0}
+                              max={Math.max(designerHeight - 1, 0)}
+                              value={start.y}
+                              onChange={(event) =>
+                                updateDesignerSpawnStart(index, {
+                                  y: Number(event.target.value) || 0,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Facing
+                            <select
+                              value={start.dir}
+                              onChange={(event) =>
+                                updateDesignerSpawnStart(index, {
+                                  dir: event.target.value as 'N' | 'E' | 'S' | 'W',
+                                })
+                              }
+                            >
+                              {designerDirections.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="designer__group">
                 <h3>Exits</h3>
