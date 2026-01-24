@@ -545,6 +545,7 @@ const App = () => {
   >(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isLevelsOpen, setIsLevelsOpen] = useState(false);
+  const [isDesignerOpen, setIsDesignerOpen] = useState(false);
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
@@ -800,9 +801,14 @@ const App = () => {
   }, [currentSolutionXml]);
 
   const handleOpenDesignerFromLevels = useCallback(() => {
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
     setIsLevelsOpen(false);
     setIsEditorOpen(false);
+    setIsDesignerOpen(isMobile);
     window.setTimeout(() => {
+      if (isMobile) {
+        return;
+      }
       designerPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
   }, []);
@@ -1708,7 +1714,7 @@ const App = () => {
     <div
       className={`app${isEditorOpen ? ' app--editor-open' : ''}${
         isLevelsOpen ? ' app--levels-open' : ''
-      }`}
+      }${isDesignerOpen ? ' app--designer-open' : ''}`}
     >
       <header className="app__header">
         <div>
@@ -2127,6 +2133,14 @@ const App = () => {
               >
                 Clear Grid
               </button>
+              <button
+                type="button"
+                className="panel__close"
+                onClick={() => setIsDesignerOpen(false)}
+                aria-label="Close level designer"
+              >
+                ✕
+              </button>
             </div>
           </div>
           <p className="designer__intro">
@@ -2308,6 +2322,7 @@ const App = () => {
         onClick={() => {
           setIsEditorOpen(false);
           setIsLevelsOpen(false);
+          setIsDesignerOpen(false);
         }}
         aria-hidden
       />
@@ -2374,6 +2389,7 @@ const App = () => {
                 const nextState = !isOpen;
                 if (nextState) {
                   setIsLevelsOpen(false);
+                  setIsDesignerOpen(false);
                 }
                 return nextState;
               })
@@ -2393,6 +2409,7 @@ const App = () => {
                 const nextState = !isOpen;
                 if (nextState) {
                   setIsEditorOpen(false);
+                  setIsDesignerOpen(false);
                 }
                 return nextState;
               })

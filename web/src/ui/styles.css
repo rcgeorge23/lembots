@@ -1364,7 +1364,6 @@ body {
     grid-template-columns: 1fr;
     grid-template-areas:
       'sim'
-      'designer'
       'editor'
       'controls';
     flex: 1;
@@ -1462,6 +1461,28 @@ body {
     transform: translateX(0);
   }
 
+  .panel--designer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(520px, 92vw);
+    max-width: 100%;
+    transform: translateX(105%);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    z-index: 19;
+    border-radius: 0;
+    padding: 20px 18px 28px;
+    margin: 0;
+    border-top: none;
+    overflow-y: auto;
+    box-shadow: -12px 0 24px rgba(2, 6, 23, 0.6);
+  }
+
+  .app--designer-open .panel--designer {
+    transform: translateX(0);
+  }
+
   .panel--editor .blockly-host {
     height: 100%;
     min-height: 0;
@@ -1480,7 +1501,8 @@ body {
   }
 
   .app--editor-open .panel-backdrop,
-  .app--levels-open .panel-backdrop {
+  .app--levels-open .panel-backdrop,
+  .app--designer-open .panel-backdrop {
     opacity: 1;
     pointer-events: auto;
   }
