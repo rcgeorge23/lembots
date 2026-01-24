@@ -443,9 +443,12 @@ const App = () => {
       setDesignerGrid((prev) =>
         prev.map((gridRow, rowIndex) =>
           rowIndex === row
-            ? gridRow.map((cell, colIndex) =>
-                colIndex === col ? designerTile : cell,
-              )
+            ? gridRow.map((cell, colIndex) => {
+                if (colIndex !== col) {
+                  return cell;
+                }
+                return cell === designerTile ? TileType.Empty : designerTile;
+              })
             : gridRow,
         ),
       );
