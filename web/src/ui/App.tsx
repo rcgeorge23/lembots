@@ -2154,9 +2154,8 @@ const App = () => {
                 <label className="designer__field">
                   Bots start
                   <input
-                    type="number"
-                    min={1}
-                    max={20}
+                    type="text"
+                    inputMode="numeric"
                     value={designerSpawnerCount}
                     onChange={(event) =>
                       setDesignerSpawnerCount(
@@ -2168,9 +2167,8 @@ const App = () => {
                 <label className="designer__field">
                   Bots to save
                   <input
-                    type="number"
-                    min={1}
-                    max={designerSpawnerCount}
+                    type="text"
+                    inputMode="numeric"
                     value={designerRequiredSaved}
                     onChange={(event) =>
                       setDesignerRequiredSaved(
@@ -2187,9 +2185,8 @@ const App = () => {
                   <label>
                     Spawn X
                     <input
-                      type="number"
-                      min={0}
-                      max={Math.max(designerWidth - 1, 0)}
+                      type="text"
+                      inputMode="numeric"
                       value={designerSpawnX}
                       onChange={(event) => {
                         const nextValue = clampNumber(
@@ -2205,9 +2202,8 @@ const App = () => {
                   <label>
                     Spawn Y
                     <input
-                      type="number"
-                      min={0}
-                      max={Math.max(designerHeight - 1, 0)}
+                      type="text"
+                      inputMode="numeric"
                       value={designerSpawnY}
                       onChange={(event) => {
                         const nextValue = clampNumber(
@@ -2248,9 +2244,8 @@ const App = () => {
                           <label>
                             X
                             <input
-                              type="number"
-                              min={0}
-                              max={Math.max(designerWidth - 1, 0)}
+                              type="text"
+                              inputMode="numeric"
                               value={start.x}
                               onChange={(event) =>
                                 updateDesignerSpawnStart(index, {
@@ -2262,9 +2257,8 @@ const App = () => {
                           <label>
                             Y
                             <input
-                              type="number"
-                              min={0}
-                              max={Math.max(designerHeight - 1, 0)}
+                              type="text"
+                              inputMode="numeric"
                               value={start.y}
                               onChange={(event) =>
                                 updateDesignerSpawnStart(index, {
