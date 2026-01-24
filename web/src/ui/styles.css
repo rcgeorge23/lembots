@@ -1198,6 +1198,35 @@ body {
   align-self: center;
 }
 
+.designer__spawn-count {
+  font-weight: 600;
+  color: var(--panel-highlight);
+  font-size: 0.9rem;
+  align-self: center;
+}
+
+.designer__tool-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.designer__tool-button {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.4);
+  color: var(--panel-highlight);
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.designer__tool-button.is-selected {
+  border-color: var(--panel-accent);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.5);
+}
+
 .designer__workspace {
   display: flex;
   flex-direction: column;
@@ -1220,6 +1249,18 @@ body {
   border-radius: 6px;
   cursor: pointer;
   background: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+.designer-cell__bot {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transform-origin: center;
 }
 
 .designer__output {
