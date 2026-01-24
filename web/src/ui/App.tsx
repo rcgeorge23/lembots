@@ -166,6 +166,26 @@ const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction =>
   }
 };
 
+const designerDirectionFromValue = (
+  value: number | 'N' | 'E' | 'S' | 'W' | undefined,
+): 'N' | 'E' | 'S' | 'W' => {
+  if (value === 'N' || value === 'E' || value === 'S' || value === 'W') {
+    return value;
+  }
+  switch (value) {
+    case 0:
+      return 'N';
+    case 1:
+      return 'E';
+    case 2:
+      return 'S';
+    case 3:
+      return 'W';
+    default:
+      return 'E';
+  }
+};
+
 const createDesignerGrid = (width: number, height: number): number[][] =>
   Array.from({ length: height }, () => Array.from({ length: width }, () => TileType.Empty));
 
@@ -510,6 +530,7 @@ const App = () => {
   const [designerSpawnX, setDesignerSpawnX] = useState(1);
   const [designerSpawnY, setDesignerSpawnY] = useState(1);
   const [designerSpawnDir, setDesignerSpawnDir] = useState<'N' | 'E' | 'S' | 'W'>('E');
+  const [designerSourceLevelId, setDesignerSourceLevelId] = useState('');
   const [designerCopyStatus, setDesignerCopyStatus] = useState<'idle' | 'copied' | 'error'>(
     'idle',
   );
@@ -517,6 +538,60 @@ const App = () => {
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
   const currentLevel = levels[levelIndex];
   const currentSolutionXml = currentLevel ? levelSolutionXmlById[currentLevel.id] : null;
+  const designerLevelOptions = useMemo(
+    () =>
+      levels.map((level, index) => ({
+        id: level.id,
+        label: `${index + 1}. ${level.name}`,
+      })),
+    [],
+  );
+
+  const handleDesignerLoadFromLevel = useCallback(() => {
+    if (!designerSourceLevelId) {
+      return;
+    }
+
+    const sourceLevel = levels.find((level) => level.id === designerSourceLevelId);
+    if (!sourceLevel) {
+      return;
+    }
+
+    const normalizedGrid = sourceLevel.grid.map((row) => [...row]);
+    const nextHeight = normalizedGrid.length;
+    const nextWidth = Math.max(0, ...normalizedGrid.map((row) => row.length));
+    if (nextHeight === 0 || nextWidth === 0) {
+      return;
+    }
+
+    const paddedGrid = normalizedGrid.map((row) =>
+      row.length < nextWidth
+        ? [...row, ...Array.from({ length: nextWidth - row.length }, () => TileType.Empty)]
+        : row.slice(0, nextWidth),
+    );
+    const spawnSource =
+      sourceLevel.spawner?.starts?.[0] ??
+      sourceLevel.spawner ??
+      sourceLevel.start ?? { x: 1, y: 1, dir: 1 };
+    const spawnerCount =
+      sourceLevel.spawner?.count ?? sourceLevel.spawner?.starts?.length ?? 1;
+    const clampedSpawnerCount = clampNumber(spawnerCount, 1, 20);
+    const requiredSaved = clampNumber(
+      sourceLevel.requiredSaved ?? clampedSpawnerCount,
+      1,
+      clampedSpawnerCount,
+    );
+
+    setDesignerWidth(nextWidth);
+    setDesignerHeight(nextHeight);
+    setDesignerGrid(paddedGrid);
+    setDesignerSpawnerCount(clampedSpawnerCount);
+    setDesignerRequiredSaved(requiredSaved);
+    setDesignerSpawnX(clampNumber(spawnSource.x, 0, Math.max(nextWidth - 1, 0)));
+    setDesignerSpawnY(clampNumber(spawnSource.y, 0, Math.max(nextHeight - 1, 0)));
+    setDesignerSpawnDir(designerDirectionFromValue(spawnSource.dir));
+    setDesignerCopyStatus('idle');
+  }, [designerSourceLevelId]);
 
   const simulationRef = useRef(simulation);
   const vmStatesRef = useRef<Map<string, VmState>>(new Map());
@@ -1836,6 +1911,28 @@ const App = () => {
           <div className="panel__header">
             <h2>Level Designer</h2>
             <div className="panel__header-actions">
+              <label className="designer__level-select">
+                <span>Start from</span>
+                <select
+                  value={designerSourceLevelId}
+                  onChange={(event) => setDesignerSourceLevelId(event.target.value)}
+                >
+                  <option value="">Select a level</option>
+                  {designerLevelOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="panel__action"
+                onClick={handleDesignerLoadFromLevel}
+                disabled={!designerSourceLevelId}
+              >
+                Load Level
+              </button>
               <button
                 type="button"
                 className="panel__action"
