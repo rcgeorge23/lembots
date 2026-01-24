@@ -1,7 +1,7 @@
 {
   "id": "level-03",
-  "name": "Raft Run",
-  "difficulty": 3,
+  "name": "Twin Launch",
+  "difficulty": 1,
   "grid": [
     [
       1,
@@ -28,10 +28,10 @@
     [
       1,
       0,
-      1,
-      1,
-      1,
-      1,
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       1
@@ -151,7 +151,7 @@
     "x": 1,
     "y": 11,
     "dir": 0,
-    "count": 3,
+    "count": 2,
     "intervalTicks": 0,
     "starts": [
       {
@@ -160,12 +160,7 @@
         "dir": 0
       },
       {
-        "x": 4,
-        "y": 11,
-        "dir": 0
-      },
-      {
-        "x": 7,
+        "x": 2,
         "y": 11,
         "dir": 0
       }
@@ -177,8 +172,8 @@
       "y": 1
     }
   ],
-  "requiredSaved": 3,
-  "maxTicks": 350,
+  "requiredSaved": 2,
+  "maxTicks": 200,
   "start": {
     "x": 1,
     "y": 11,
