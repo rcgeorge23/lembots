@@ -402,6 +402,13 @@ const App = () => {
     });
   }, []);
 
+  const [designerWidth, setDesignerWidth] = useState(designerDefaultWidth);
+  const [designerHeight, setDesignerHeight] = useState(designerDefaultHeight);
+  const [designerGrid, setDesignerGrid] = useState<number[][]>(() =>
+    createDesignerGrid(designerDefaultWidth, designerDefaultHeight),
+  );
+  const [designerTile, setDesignerTile] = useState<TileType>(TileType.Wall);
+
   const resizeDesignerGrid = useCallback((nextWidth: number, nextHeight: number) => {
     setDesignerGrid((prev) =>
       Array.from({ length: nextHeight }, (_, rowIndex) =>
@@ -495,12 +502,6 @@ const App = () => {
   } | null>(null);
   const [tileBubbleShift, setTileBubbleShift] = useState(0);
   const [tileBubblePointerOffset, setTileBubblePointerOffset] = useState(0);
-  const [designerWidth, setDesignerWidth] = useState(designerDefaultWidth);
-  const [designerHeight, setDesignerHeight] = useState(designerDefaultHeight);
-  const [designerGrid, setDesignerGrid] = useState<number[][]>(() =>
-    createDesignerGrid(designerDefaultWidth, designerDefaultHeight),
-  );
-  const [designerTile, setDesignerTile] = useState<TileType>(TileType.Wall);
   const [designerSpawnerCount, setDesignerSpawnerCount] = useState(3);
   const [designerRequiredSaved, setDesignerRequiredSaved] = useState(1);
   const [designerSpawnX, setDesignerSpawnX] = useState(1);
