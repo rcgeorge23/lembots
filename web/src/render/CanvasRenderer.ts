@@ -458,7 +458,7 @@ export class CanvasRenderer implements Renderer {
     const pointerHeight = 6;
 
     ctx.save();
-    ctx.font = '11px "Share Tech Mono", "SFMono-Regular", ui-monospace, monospace';
+    ctx.font = '11px "Press Start 2P", "VT323", "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const textWidth = ctx.measureText(label).width;
