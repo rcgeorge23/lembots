@@ -1,4 +1,60 @@
-import type { RobotAction } from '../engine/robot';
+import type { Direction, RobotAction, RobotState } from '../engine/robot';
+
+export interface SolverLevelDefinition {
+  id?: string;
+  name?: string;
+  grid: number[][];
+  spawner?: {
+    x: number;
+    y: number;
+    dir: number | 'N' | 'E' | 'S' | 'W';
+    count: number;
+    intervalTicks: number;
+    starts?: { x: number; y: number; dir: number | 'N' | 'E' | 'S' | 'W' }[];
+  };
+  exits?: { x: number; y: number }[];
+  requiredSaved?: number;
+  maxTicks?: number;
+  start?: { x: number; y: number; dir: number };
+  goal?: { x: number; y: number };
+}
+
+export interface TraceLiteFrame {
+  id: string;
+  x: number;
+  y: number;
+  dir: Direction;
+  status: 'alive' | 'dead' | 'saved';
+}
+
+export interface TraceLite {
+  sampleEvery: number;
+  frames: TraceLiteFrame[][];
+}
+
+export interface EventSummary {
+  doorOpened: boolean;
+  pressurePlatePressed: boolean;
+  raftUsed: boolean;
+  waterTouched: boolean;
+  anySaved: boolean;
+}
+
+export interface EvalOptions {
+  maxTicks?: number;
+  maxVmSteps?: number;
+  sampleEvery?: number;
+}
+
+export interface EvalResult {
+  solved: boolean;
+  score: number;
+  ticks: number;
+  finalRobots: RobotState[];
+  bestRobots?: RobotState[];
+  events: EventSummary;
+  traceLite?: TraceLite;
+}
 
 export type SolverConditionType =
   | 'AHEAD_CLEAR'

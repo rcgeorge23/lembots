@@ -80,9 +80,9 @@ We do **not** render every attempt. We show:
 - [x] Defer loops until basic search works.
 
 ### 2) Simulation evaluation API (no rendering)
-- [ ] Add a headless evaluation function used by the solver:
+- [x] Add a headless evaluation function used by the solver:
   - `evaluate(program, level, options) -> EvalResult`
-- [ ] Ensure `EvalResult` includes:
+- [x] Ensure `EvalResult` includes:
   - `solved: boolean`
   - `score: number` (fitness)
   - `ticks: number`
