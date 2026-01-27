@@ -58,26 +58,26 @@ We do **not** render every attempt. We show:
 ## Step-by-step checklist
 
 ### 1) Canonical solver AST / bytecode representation
-- [ ] Define a minimal solver program representation that maps cleanly to Blockly blocks and the existing VM.
-- [ ] Implement program nodes:
+- [x] Define a minimal solver program representation that maps cleanly to Blockly blocks and the existing VM.
+- [x] Implement program nodes:
   - `Seq([node...])`
   - `Act(MOVE|TURN_L|TURN_R|WAIT|SIGNAL_ON|SIGNAL_OFF|...)` (only include actions allowed in the level)
   - `If(cond, thenNode, elseNode?)`
   - `Repeat(n, body)` (optional in v1; can add later)
   - `(optional) RepeatUntil(cond, body)` (defer unless needed)
-- [ ] Implement conditions:
+- [x] Implement conditions:
   - `AheadClear`
   - `LeftClear`
   - `RightClear`
   - `OnGoal`
   - `OnPressurePlate`
   - `OnRaft` (important for raft/water levels)
-- [ ] Implement boolean combinators (needed to express real logic):
+- [x] Implement boolean combinators (needed to express real logic):
   - `Not(cond)`
   - `And(condA, condB)`
   - `Or(condA, condB)`
-- [ ] Keep v1 small: Actions + `If` with simple conditions and `Not/And/Or`.
-- [ ] Defer loops until basic search works.
+- [x] Keep v1 small: Actions + `If` with simple conditions and `Not/And/Or`.
+- [x] Defer loops until basic search works.
 
 ### 2) Simulation evaluation API (no rendering)
 - [ ] Add a headless evaluation function used by the solver:
@@ -121,4 +121,3 @@ We do **not** render every attempt. We show:
 - [ ] Add tests for `evaluate()` on small deterministic levels.
 - [ ] Add solver tests for known levels (should find solutions within budget).
 - [ ] Confirm solver does not block UI and respects time budget.
-
