@@ -112,10 +112,10 @@ We do **not** render every attempt. We show:
 - [x] Prioritize candidates via bounded best-first search or beam search.
 
 ### 6) UI integration
-- [ ] Add a **“Find Solution”** button and solver status panel (progress bar, attempts, best score).
-- [ ] Render ghost preview for the current best candidate trace on the simulation grid.
-- [ ] Allow user to apply the found program or step through it.
-- [ ] If not solved within budget, show best-so-far run + “Try again” / “Increase budget”.
+- [x] Add a **“Find Solution”** button and solver status panel (progress bar, attempts, best score).
+- [x] Render ghost preview for the current best candidate trace on the simulation grid.
+- [x] Allow user to apply the found program or step through it.
+- [x] If not solved within budget, show best-so-far run + “Try again” / “Increase budget”.
 
 ### 7) Validation & testing
 - [ ] Add tests for `evaluate()` on small deterministic levels.

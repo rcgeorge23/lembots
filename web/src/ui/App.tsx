@@ -26,6 +26,14 @@ import { TileType, createWorld, getTile } from '../engine/world';
 import { CanvasRenderer } from '../render/CanvasRenderer';
 import { loadRenderAssets } from '../render/assets';
 import type { RenderAssets } from '../render/Renderer';
+import type {
+  SolverConditionNode,
+  SolverProgram,
+  SolverWorkerStartPayload,
+  SolverWorkerResponse,
+  TraceLite,
+  TraceLiteFrame,
+} from '../solver/types';
 import level01 from '../levels/builtin/level-01.json';
 import level02 from '../levels/builtin/level-02.json';
 import level03 from '../levels/builtin/level-03.json';
@@ -141,6 +149,21 @@ const thumbnailJettyFill = '#a16207';
 const thumbnailJettyStroke = '#78350f';
 const designerDefaultWidth = 12;
 const designerDefaultHeight = 10;
+type SolverPrimitiveCondition = Extract<SolverConditionNode, { kind: 'primitive' }>['condition'];
+const solverActionBlockTypes: Record<RobotAction, string> = {
+  MOVE_FORWARD: 'lembot_move_forward',
+  TURN_LEFT: 'lembot_turn_left',
+  TURN_RIGHT: 'lembot_turn_right',
+  WAIT: 'lembot_wait',
+};
+const solverConditionBlockTypes: Record<SolverPrimitiveCondition, string> = {
+  AHEAD_CLEAR: 'lembot_ahead_clear',
+  LEFT_CLEAR: 'lembot_left_clear',
+  RIGHT_CLEAR: 'lembot_right_clear',
+  ON_GOAL: 'lembot_on_goal',
+  ON_PRESSURE_PLATE: 'lembot_on_pressure_plate',
+  ON_RAFT: 'lembot_on_raft',
+};
 
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
@@ -219,11 +242,152 @@ const listDesignerPositions = (grid: number[][], tileType: TileType): Array<{ x:
   return positions;
 };
 
+const createXmlElement = (name: string): Element =>
+  Blockly.utils.xml.createElement(name);
+
+const createXmlBlock = (type: string): Element => {
+  const block = createXmlElement('block');
+  block.setAttribute('type', type);
+  return block;
+};
+
+const appendStatement = (block: Element, name: string, statementBlock: Element | null) => {
+  if (!statementBlock) {
+    return;
+  }
+  const statement = createXmlElement('statement');
+  statement.setAttribute('name', name);
+  statement.appendChild(statementBlock);
+  block.appendChild(statement);
+};
+
+const appendValue = (block: Element, name: string, valueBlock: Element | null) => {
+  if (!valueBlock) {
+    return;
+  }
+  const value = createXmlElement('value');
+  value.setAttribute('name', name);
+  value.appendChild(valueBlock);
+  block.appendChild(value);
+};
+
+const createField = (block: Element, name: string, value: string) => {
+  const field = createXmlElement('field');
+  field.setAttribute('name', name);
+  field.textContent = value;
+  block.appendChild(field);
+};
+
+const buildConditionBlock = (condition: SolverConditionNode): Element => {
+  if (condition.kind === 'primitive') {
+    return createXmlBlock(solverConditionBlockTypes[condition.condition]);
+  }
+
+  if (condition.kind === 'not') {
+    const block = createXmlBlock('lembot_logic_not');
+    appendValue(block, 'OPERAND', buildConditionBlock(condition.operand));
+    return block;
+  }
+
+  if (condition.kind === 'and') {
+    const block = createXmlBlock('lembot_logic_and');
+    appendValue(block, 'LEFT', buildConditionBlock(condition.left));
+    appendValue(block, 'RIGHT', buildConditionBlock(condition.right));
+    return block;
+  }
+
+  const block = createXmlBlock('lembot_logic_or');
+  appendValue(block, 'LEFT', buildConditionBlock(condition.left));
+  appendValue(block, 'RIGHT', buildConditionBlock(condition.right));
+  return block;
+};
+
+const buildProgramBlock = (node: SolverProgram['steps'][number]): Element => {
+  switch (node.type) {
+    case 'action': {
+      return createXmlBlock(solverActionBlockTypes[node.action]);
+    }
+    case 'if': {
+      const block = createXmlBlock('lembot_if');
+      appendValue(block, 'CONDITION', buildConditionBlock(node.condition));
+      appendStatement(block, 'THEN', buildProgramBlockChain(node.thenBranch));
+      if (node.elseBranch) {
+        appendStatement(block, 'ELSE', buildProgramBlockChain(node.elseBranch));
+      }
+      return block;
+    }
+    case 'repeat': {
+      const block = createXmlBlock('lembot_repeat');
+      createField(block, 'COUNT', String(node.count));
+      appendStatement(block, 'DO', buildProgramBlockChain(node.body));
+      return block;
+    }
+    case 'repeat_until': {
+      const block = createXmlBlock('lembot_repeat_until');
+      appendValue(block, 'CONDITION', buildConditionBlock(node.condition));
+      appendStatement(block, 'DO', buildProgramBlockChain(node.body));
+      return block;
+    }
+    default: {
+      const _exhaustive: never = node;
+      return _exhaustive;
+    }
+  }
+};
+
+const buildProgramBlockChain = (program: SolverProgram): Element | null => {
+  if (!program.steps.length) {
+    return null;
+  }
+  const [first, ...rest] = program.steps;
+  const root = buildProgramBlock(first);
+  let current = root;
+  rest.forEach((step) => {
+    const next = createXmlElement('next');
+    const nextBlock = buildProgramBlock(step);
+    next.appendChild(nextBlock);
+    current.appendChild(next);
+    current = nextBlock;
+  });
+  return root;
+};
+
 interface DesignerSpawnStart {
   x: number;
   y: number;
   dir: 'N' | 'E' | 'S' | 'W';
 }
+
+interface SolverBudgetOption {
+  id: 'quick' | 'deep';
+  label: string;
+  description: string;
+  maxAttempts: number;
+  maxTimeMs: number;
+  maxDepth: number;
+  beamWidth: number;
+}
+
+const solverBudgetOptions: SolverBudgetOption[] = [
+  {
+    id: 'quick',
+    label: 'Quick hint',
+    description: 'Fast search for a short program.',
+    maxAttempts: 160,
+    maxTimeMs: 1200,
+    maxDepth: 18,
+    beamWidth: 14,
+  },
+  {
+    id: 'deep',
+    label: 'Deep search',
+    description: 'More time and depth to solve tougher maps.',
+    maxAttempts: 520,
+    maxTimeMs: 3500,
+    maxDepth: 32,
+    beamWidth: 24,
+  },
+];
 
 const drawThumbnailPlate = (
   ctx: CanvasRenderingContext2D,
@@ -413,6 +577,8 @@ const App = () => {
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const traceLogRef = useRef<HTMLDivElement | null>(null);
+  const solverWorkerRef = useRef<Worker | null>(null);
+  const ghostRobotsRef = useRef<TraceLiteFrame[] | null>(null);
 
   const createSimulationForLevel = useCallback((level: LevelDefinition): SimulationState => {
     const world = createWorld(level.grid);
@@ -570,6 +736,16 @@ const App = () => {
   const [designerCopyStatus, setDesignerCopyStatus] = useState<'idle' | 'copied' | 'error'>(
     'idle',
   );
+  const [solverStatus, setSolverStatus] = useState<
+    'idle' | 'running' | 'solved' | 'unsolved'
+  >('idle');
+  const [solverAttempts, setSolverAttempts] = useState(0);
+  const [solverElapsedMs, setSolverElapsedMs] = useState(0);
+  const [solverBestScore, setSolverBestScore] = useState(-Infinity);
+  const [solverBestProgram, setSolverBestProgram] = useState<SolverProgram | null>(null);
+  const [solverBestTrace, setSolverBestTrace] = useState<TraceLite | null>(null);
+  const [solverBudgetId, setSolverBudgetId] = useState<SolverBudgetOption['id']>('quick');
+  const [solverPreviewFrame, setSolverPreviewFrame] = useState(0);
 
   const completedLevelSet = useMemo(() => new Set(completedLevels), [completedLevels]);
   const currentLevel = levels[levelIndex];
@@ -590,6 +766,10 @@ const App = () => {
     });
     return map;
   }, [designerSpawnStarts]);
+  const solverBudget = useMemo(
+    () => solverBudgetOptions.find((option) => option.id === solverBudgetId) ?? solverBudgetOptions[0],
+    [solverBudgetId],
+  );
 
   const handleDesignerLoadFromLevel = useCallback(() => {
     if (!designerSourceLevelId) {
@@ -1107,6 +1287,108 @@ const App = () => {
     traceRef.current = [];
   };
 
+  const applySolverProgram = useCallback((program: SolverProgram) => {
+    const workspace = workspaceRef.current;
+    if (!workspace) {
+      return;
+    }
+    workspace.clear();
+    const rootBlock = buildProgramBlockChain(program);
+    if (!rootBlock) {
+      saveStoredProgram(workspace);
+      return;
+    }
+    rootBlock.setAttribute('x', '24');
+    rootBlock.setAttribute('y', '24');
+    const xml = createXmlElement('xml');
+    xml.appendChild(rootBlock);
+    Blockly.Xml.domToWorkspace(xml, workspace);
+    workspace.scrollCenter();
+    saveStoredProgram(workspace);
+  }, []);
+
+  const handleSolverStart = useCallback(
+    (budgetOverride?: SolverBudgetOption) => {
+      const worker = solverWorkerRef.current;
+      if (!worker || !currentLevel) {
+        return;
+      }
+
+      setIsRunning(false);
+      setIsReplaying(false);
+      setSolverStatus('running');
+      setSolverAttempts(0);
+      setSolverElapsedMs(0);
+      setSolverBestScore(-Infinity);
+      setSolverBestProgram(null);
+      setSolverBestTrace(null);
+      setSolverPreviewFrame(0);
+      ghostRobotsRef.current = null;
+
+      const budget = budgetOverride ?? solverBudget;
+      const solverActions: RobotAction[] = [
+        'MOVE_FORWARD',
+        'TURN_LEFT',
+        'TURN_RIGHT',
+        'WAIT',
+      ];
+      const solverConditions: SolverWorkerStartPayload['search']['conditions'] = [
+        'AHEAD_CLEAR',
+        'LEFT_CLEAR',
+        'RIGHT_CLEAR',
+        'ON_GOAL',
+        'ON_PRESSURE_PLATE',
+        'ON_RAFT',
+      ];
+      const payload: SolverWorkerStartPayload = {
+        level: {
+          id: currentLevel.id,
+          name: currentLevel.name,
+          grid: currentLevel.grid,
+          spawner: currentLevel.spawner,
+          exits: currentLevel.exits,
+          requiredSaved: currentLevel.requiredSaved,
+          maxTicks: currentLevel.maxTicks,
+          start: currentLevel.start,
+          goal: currentLevel.goal,
+        },
+        evalOptions: {
+          maxTicks: currentLevel.maxTicks ?? 200,
+          maxVmSteps: currentLevel.maxTicks ?? 200,
+          sampleEvery: 4,
+        },
+        search: {
+          maxAttempts: budget.maxAttempts,
+          maxTimeMs: budget.maxTimeMs,
+          maxDepth: budget.maxDepth,
+          beamWidth: budget.beamWidth,
+          progressEvery: 15,
+          actions: solverActions,
+          conditions: solverConditions,
+        },
+      };
+
+      worker.postMessage({ type: 'start', payload });
+    },
+    [currentLevel, solverBudget],
+  );
+
+  const handleSolverCancel = useCallback(() => {
+    const worker = solverWorkerRef.current;
+    if (!worker) {
+      return;
+    }
+    worker.postMessage({ type: 'cancel' });
+    setSolverStatus('idle');
+  }, []);
+
+  const handleSolverApply = useCallback(() => {
+    if (!solverBestProgram) {
+      return;
+    }
+    applySolverProgram(solverBestProgram);
+  }, [applySolverProgram, solverBestProgram]);
+
   useEffect(() => {
     const workspace = workspaceRef.current;
     if (!workspace) {
@@ -1219,6 +1501,7 @@ const App = () => {
         lastAction: currentActionRef.current,
         robotBubbleId,
         selectedRobotId,
+        ghostRobots: ghostRobotsRef.current ?? undefined,
       });
       animationFrame = window.requestAnimationFrame(renderLoop);
     };
@@ -1308,6 +1591,44 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    const worker = new Worker(new URL('../solver/worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    solverWorkerRef.current = worker;
+
+    const handleMessage = (event: MessageEvent<SolverWorkerResponse>) => {
+      const response = event.data;
+      if (response.type === 'progress') {
+        const payload = response.payload;
+        setSolverAttempts(payload.attemptCount);
+        setSolverElapsedMs(payload.elapsedMs);
+        setSolverBestScore(payload.bestScore);
+        setSolverBestProgram(payload.bestProgram ?? null);
+        setSolverBestTrace(payload.bestTrace ?? null);
+        return;
+      }
+
+      if (response.type === 'result') {
+        const payload = response.payload;
+        setSolverAttempts(payload.attemptCount);
+        setSolverElapsedMs(payload.elapsedMs);
+        setSolverBestScore(payload.bestScore);
+        setSolverBestProgram(payload.bestProgram ?? null);
+        setSolverBestTrace(payload.bestTrace ?? null);
+        setSolverStatus(payload.solved ? 'solved' : 'unsolved');
+      }
+    };
+
+    worker.addEventListener('message', handleMessage);
+
+    return () => {
+      worker.removeEventListener('message', handleMessage);
+      worker.terminate();
+      solverWorkerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isRunning) {
       return undefined;
     }
@@ -1368,6 +1689,55 @@ const App = () => {
 
     traceLogRef.current.scrollTop = traceLogRef.current.scrollHeight;
   }, [actionTrace.length]);
+
+  useEffect(() => {
+    if (solverWorkerRef.current) {
+      solverWorkerRef.current.postMessage({ type: 'cancel' });
+    }
+    setSolverStatus('idle');
+    setSolverAttempts(0);
+    setSolverElapsedMs(0);
+    setSolverBestScore(-Infinity);
+    setSolverBestProgram(null);
+    setSolverBestTrace(null);
+    setSolverPreviewFrame(0);
+    ghostRobotsRef.current = null;
+  }, [levelIndex]);
+
+  useEffect(() => {
+    if (!solverBestTrace) {
+      setSolverPreviewFrame(0);
+      ghostRobotsRef.current = null;
+      return;
+    }
+
+    setSolverPreviewFrame(0);
+    ghostRobotsRef.current = solverBestTrace.frames[0] ?? null;
+  }, [solverBestTrace]);
+
+  useEffect(() => {
+    if (!solverBestTrace || solverBestTrace.frames.length <= 1) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setSolverPreviewFrame((prev) =>
+        (prev + 1) % solverBestTrace.frames.length,
+      );
+    }, 350);
+
+    return () => window.clearInterval(interval);
+  }, [solverBestTrace]);
+
+  useEffect(() => {
+    if (!solverBestTrace) {
+      ghostRobotsRef.current = null;
+      return;
+    }
+
+    ghostRobotsRef.current =
+      solverBestTrace.frames[solverPreviewFrame] ?? solverBestTrace.frames[0] ?? null;
+  }, [solverBestTrace, solverPreviewFrame]);
 
   const handleCanvasPointerDown = useCallback(
     (event: PointerEvent<HTMLCanvasElement>) => {
@@ -1454,6 +1824,23 @@ const App = () => {
           : isReplaying
             ? 'Replaying'
             : 'Ready';
+  const solverProgress = Math.min(
+    1,
+    Math.max(
+      solverAttempts / solverBudget.maxAttempts,
+      solverElapsedMs / solverBudget.maxTimeMs,
+    ),
+  );
+  const solverStatusLabel =
+    solverStatus === 'running'
+      ? 'Searching'
+      : solverStatus === 'solved'
+        ? 'Solved'
+        : solverStatus === 'unsolved'
+          ? 'Best effort'
+          : 'Idle';
+  const solverScoreLabel =
+    solverBestScore === -Infinity ? '—' : Math.round(solverBestScore).toString();
 
   const savedCount = simulation.savedCount;
   const lostCount = simulation.robots.filter((robot) => !robot.alive).length;
@@ -2073,6 +2460,113 @@ const App = () => {
                     })
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+          <div className="console__solver">
+            <div className="solver-panel">
+              <div className="solver-panel__header">
+                <div>
+                  <h3>Solver Assistant</h3>
+                  <p className="solver-panel__subtitle">
+                    Search for a valid block program without freezing the UI.
+                  </p>
+                </div>
+                <span className={`solver-status solver-status--${solverStatus}`}>
+                  {solverStatusLabel}
+                </span>
+              </div>
+              <div className="solver-panel__budget">
+                <label htmlFor="solver-budget">Budget</label>
+                <select
+                  id="solver-budget"
+                  value={solverBudgetId}
+                  onChange={(event) =>
+                    setSolverBudgetId(event.target.value as SolverBudgetOption['id'])
+                  }
+                  disabled={solverStatus === 'running'}
+                >
+                  {solverBudgetOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="solver-panel__note">{solverBudget.description}</p>
+              </div>
+              <div className="solver-panel__progress">
+                <div className="solver-panel__stats">
+                  <div>
+                    <p className="solver-panel__label">Attempts</p>
+                    <p className="solver-panel__value">{solverAttempts}</p>
+                  </div>
+                  <div>
+                    <p className="solver-panel__label">Elapsed</p>
+                    <p className="solver-panel__value">{Math.round(solverElapsedMs)} ms</p>
+                  </div>
+                  <div>
+                    <p className="solver-panel__label">Best score</p>
+                    <p className="solver-panel__value">{solverScoreLabel}</p>
+                  </div>
+                </div>
+                <div className="solver-panel__bar" aria-hidden="true">
+                  <span style={{ width: `${solverProgress * 100}%` }} />
+                </div>
+              </div>
+              <div className="solver-panel__actions">
+                <button
+                  type="button"
+                  onClick={() => handleSolverStart()}
+                  disabled={solverStatus === 'running'}
+                >
+                  Find Solution
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSolverCancel}
+                  disabled={solverStatus !== 'running'}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSolverApply}
+                  disabled={!solverBestProgram}
+                >
+                  Apply to editor
+                </button>
+                {solverStatus === 'unsolved' ? (
+                  <>
+                    <button type="button" onClick={() => handleSolverStart()}>
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const deepBudget = solverBudgetOptions.find((option) => option.id === 'deep');
+                        if (deepBudget) {
+                          setSolverBudgetId(deepBudget.id);
+                          handleSolverStart(deepBudget);
+                        }
+                      }}
+                    >
+                      Increase budget
+                    </button>
+                  </>
+                ) : null}
+              </div>
+              <div className="solver-panel__preview">
+                <p className="solver-panel__note">
+                  Ghost previews show the best run so far on the grid.
+                </p>
+                {solverBestTrace ? (
+                  <p className="solver-panel__preview-label">
+                    Preview frames: {solverBestTrace.frames.length} (sample every{' '}
+                    {solverBestTrace.sampleEvery} ticks)
+                  </p>
+                ) : (
+                  <p className="solver-panel__preview-label">No preview yet.</p>
+                )}
               </div>
             </div>
           </div>
