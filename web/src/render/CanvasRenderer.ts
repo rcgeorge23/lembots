@@ -509,7 +509,7 @@ export class CanvasRenderer implements Renderer {
 
   private drawGhostRobot(
     ctx: CanvasRenderingContext2D,
-    ghost: RenderContext['ghostRobots'][number],
+    ghost: NonNullable<RenderContext['ghostRobots']>[number],
   ) {
     const centerX = (ghost.x + 0.5) * this.tileSize;
     const centerY = (ghost.y + 0.5) * this.tileSize;
