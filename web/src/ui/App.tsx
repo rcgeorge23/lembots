@@ -712,6 +712,7 @@ const App = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isLevelsOpen, setIsLevelsOpen] = useState(false);
   const [isDesignerOpen, setIsDesignerOpen] = useState(false);
+  const [isSolverMenuOpen, setIsSolverMenuOpen] = useState(false);
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(
     () => simulation.robots[0]?.id ?? null,
   );
@@ -1388,6 +1389,59 @@ const App = () => {
     }
     applySolverProgram(solverBestProgram);
   }, [applySolverProgram, solverBestProgram]);
+
+  const solverActionItems = useMemo(
+    () => [
+      {
+        id: 'find',
+        label: 'Find solution',
+        onClick: () => handleSolverStart(),
+        disabled: solverStatus === 'running',
+      },
+      {
+        id: 'cancel',
+        label: 'Cancel',
+        onClick: handleSolverCancel,
+        disabled: solverStatus !== 'running',
+      },
+      {
+        id: 'apply',
+        label: 'Apply to editor',
+        onClick: handleSolverApply,
+        disabled: !solverBestProgram,
+      },
+      ...(solverStatus === 'unsolved'
+        ? [
+            {
+              id: 'retry',
+              label: 'Try again',
+              onClick: () => handleSolverStart(),
+              disabled: false,
+            },
+            {
+              id: 'budget',
+              label: 'Increase budget',
+              onClick: () => {
+                const deepBudget = solverBudgetOptions.find((option) => option.id === 'deep');
+                if (deepBudget) {
+                  setSolverBudgetId(deepBudget.id);
+                  handleSolverStart(deepBudget);
+                }
+              },
+              disabled: false,
+            },
+          ]
+        : []),
+    ],
+    [
+      handleSolverApply,
+      handleSolverCancel,
+      handleSolverStart,
+      solverBestProgram,
+      solverStatus,
+    ],
+  );
+  const hasMobileSolverMenu = solverActionItems.filter((item) => !item.disabled).length > 1;
 
   useEffect(() => {
     const workspace = workspaceRef.current;
@@ -2101,7 +2155,9 @@ const App = () => {
     <div
       className={`app${isEditorOpen ? ' app--editor-open' : ''}${
         isLevelsOpen ? ' app--levels-open' : ''
-      }${isDesignerOpen ? ' app--designer-open' : ''}`}
+      }${isDesignerOpen ? ' app--designer-open' : ''}${
+        isSolverMenuOpen ? ' app--solver-open' : ''
+      }`}
     >
       <header className="app__header">
         <div>
@@ -2817,6 +2873,7 @@ const App = () => {
           setIsEditorOpen(false);
           setIsLevelsOpen(false);
           setIsDesignerOpen(false);
+          setIsSolverMenuOpen(false);
         }}
         aria-hidden
       />
@@ -2916,8 +2973,71 @@ const App = () => {
             </span>
             <span className="sr-only">Levels</span>
           </button>
+          {hasMobileSolverMenu ? (
+            <button
+              type="button"
+              className="mobile-solver-toggle"
+              onClick={() =>
+                setIsSolverMenuOpen((isOpen) => {
+                  const nextState = !isOpen;
+                  if (nextState) {
+                    setIsEditorOpen(false);
+                    setIsLevelsOpen(false);
+                    setIsDesignerOpen(false);
+                  }
+                  return nextState;
+                })
+              }
+              aria-label="Toggle solver controls"
+              aria-expanded={isSolverMenuOpen}
+            >
+              <span className="mobile-console__icon" aria-hidden="true">
+                ⋮
+              </span>
+              <span className="sr-only">Solver</span>
+            </button>
+          ) : null}
         </div>
       </div>
+      <section className="mobile-solver-menu" aria-label="Solver controls">
+        <div className="mobile-solver-menu__header">
+          <div>
+            <h3>Solver Assistant</h3>
+            <p>Search for a valid block program.</p>
+          </div>
+          <span className={`solver-status solver-status--${solverStatus}`}>{solverStatusLabel}</span>
+        </div>
+        <div className="mobile-solver-menu__budget">
+          <label htmlFor="mobile-solver-budget">Budget</label>
+          <select
+            id="mobile-solver-budget"
+            value={solverBudgetId}
+            onChange={(event) => setSolverBudgetId(event.target.value as SolverBudgetOption['id'])}
+            disabled={solverStatus === 'running'}
+          >
+            {solverBudgetOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mobile-solver-menu__actions">
+          {solverActionItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                item.onClick();
+                setIsSolverMenuOpen(false);
+              }}
+              disabled={item.disabled}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </section>
       <section className="levels-strip" aria-label="Level selection">
         <div className="levels-strip__header">
           <h3>Levels</h3>
