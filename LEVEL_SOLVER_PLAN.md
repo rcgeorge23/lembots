@@ -107,9 +107,9 @@ We do **not** render every attempt. We show:
 - [x] Support budgets (time, node count, or depth) and return best-so-far if budget expires.
 
 ### 5) Heuristics & scoring
-- [ ] Define a heuristic fitness score using progress + milestones.
-- [ ] Track milestone events (e.g., doors opened, water crossed, raft used) in `EvalResult`.
-- [ ] Prioritize candidates via bounded best-first search or beam search.
+- [x] Define a heuristic fitness score using progress + milestones.
+- [x] Track milestone events (e.g., doors opened, water crossed, raft used) in `EvalResult`.
+- [x] Prioritize candidates via bounded best-first search or beam search.
 
 ### 6) UI integration
 - [ ] Add a **“Find Solution”** button and solver status panel (progress bar, attempts, best score).

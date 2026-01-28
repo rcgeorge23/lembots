@@ -60,6 +60,7 @@ export interface SolverSearchOptions {
   maxAttempts?: number;
   maxTimeMs?: number;
   maxDepth?: number;
+  beamWidth?: number;
   progressEvery?: number;
   seed?: number;
   actions: RobotAction[];
