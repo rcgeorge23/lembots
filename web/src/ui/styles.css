@@ -654,6 +654,7 @@ body {
 
 .console__controls button,
 .speed-toggle button,
+.solver-panel__actions button,
 .mobile-console__actions button,
 .mobile-editor-toggle,
 .levels-strip__designer-button {
@@ -680,6 +681,7 @@ body {
 
 .console__controls button:hover:not(:disabled),
 .speed-toggle button:hover:not(:disabled),
+.solver-panel__actions button:hover:not(:disabled),
 .mobile-console__actions button:hover:not(:disabled),
 .mobile-editor-toggle:hover:not(:disabled),
 .levels-strip__designer-button:hover:not(:disabled) {
@@ -692,6 +694,7 @@ body {
 
 .console__controls button:active:not(:disabled),
 .speed-toggle button:active:not(:disabled),
+.solver-panel__actions button:active:not(:disabled),
 .mobile-console__actions button:active:not(:disabled),
 .mobile-editor-toggle:active:not(:disabled),
 .levels-strip__designer-button:active:not(:disabled) {
@@ -704,6 +707,7 @@ body {
 
 .console__controls button:disabled,
 .speed-toggle button:disabled,
+.solver-panel__actions button:disabled,
 .mobile-console__actions button:disabled,
 .mobile-editor-toggle:disabled,
 .levels-strip__designer-button:disabled {
@@ -779,6 +783,153 @@ body {
   border-top: 1px solid rgba(148, 163, 184, 0.2);
   display: grid;
   gap: 12px;
+}
+
+.console__solver {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.solver-panel {
+  display: grid;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.solver-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.solver-panel__header h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: var(--panel-highlight);
+}
+
+.solver-panel__subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.solver-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f8fafc;
+}
+
+.solver-status--running {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.solver-status--solved {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.solver-status--unsolved {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.solver-status--idle {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.solver-panel__budget {
+  display: grid;
+  gap: 6px;
+}
+
+.solver-panel__budget label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.solver-panel__budget select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--panel-highlight);
+}
+
+.solver-panel__note {
+  margin: 0;
+  color: rgba(148, 163, 184, 0.8);
+  font-size: 0.8rem;
+}
+
+.solver-panel__progress {
+  display: grid;
+  gap: 10px;
+}
+
+.solver-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.solver-panel__label {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.solver-panel__value {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.solver-panel__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+}
+
+.solver-panel__bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.6), rgba(34, 197, 94, 0.7));
+}
+
+.solver-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.solver-panel__actions button {
+  flex: 1 1 160px;
+}
+
+.solver-panel__preview-label {
+  margin: 0;
+  color: #cbd5f5;
+  font-size: 0.85rem;
 }
 
 .console__robots-header {

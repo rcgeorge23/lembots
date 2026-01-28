@@ -31,6 +31,13 @@ export interface RenderContext {
   lastAction?: RobotAction | null;
   robotBubbleId?: string | null;
   selectedRobotId?: string | null;
+  ghostRobots?: Array<{
+    id: string;
+    x: number;
+    y: number;
+    dir: number;
+    status: 'alive' | 'dead' | 'saved';
+  }>;
 }
 
 export interface Renderer {

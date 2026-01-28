@@ -126,6 +126,12 @@ export class CanvasRenderer implements Renderer {
       }
     }
 
+    if (context?.ghostRobots && context.ghostRobots.length > 0) {
+      context.ghostRobots.forEach((ghost) => {
+        this.drawGhostRobot(ctx, ghost);
+      });
+    }
+
     const selectedRobotId = context?.selectedRobotId ?? simulation.robots[0]?.id ?? null;
     const activeIds = new Set(simulation.robots.map((robot) => robot.id));
     for (const id of this.robotStates.keys()) {
@@ -498,6 +504,43 @@ export class CanvasRenderer implements Renderer {
 
     ctx.fillStyle = '#f8fafc';
     ctx.fillText(label, centerX, bubbleY + bubbleHeight / 2);
+    ctx.restore();
+  }
+
+  private drawGhostRobot(
+    ctx: CanvasRenderingContext2D,
+    ghost: RenderContext['ghostRobots'][number],
+  ) {
+    const centerX = (ghost.x + 0.5) * this.tileSize;
+    const centerY = (ghost.y + 0.5) * this.tileSize;
+    const radius = this.tileSize * 0.3;
+    const color =
+      ghost.status === 'saved'
+        ? 'rgba(34, 197, 94, 0.45)'
+        : ghost.status === 'dead'
+          ? 'rgba(248, 113, 113, 0.35)'
+          : 'rgba(56, 189, 248, 0.35)';
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    const arrowSize = radius * 0.9;
+    const rotation = (Math.PI / 2) * ghost.dir;
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotation);
+    ctx.beginPath();
+    ctx.moveTo(0, -arrowSize);
+    ctx.lineTo(arrowSize * 0.5, arrowSize * 0.6);
+    ctx.lineTo(-arrowSize * 0.5, arrowSize * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.6)';
+    ctx.fill();
     ctx.restore();
   }
 }
