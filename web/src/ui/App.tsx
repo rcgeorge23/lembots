@@ -1441,7 +1441,7 @@ const App = () => {
       solverStatus,
     ],
   );
-  const hasMobileSolverMenu = solverActionItems.filter((item) => !item.disabled).length > 1;
+  const hasMobileSolverMenu = solverActionItems.some((item) => !item.disabled);
 
   useEffect(() => {
     const workspace = workspaceRef.current;
