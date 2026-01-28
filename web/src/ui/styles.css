@@ -1746,25 +1746,29 @@ body {
   }
 
   .mobile-solver-menu {
-    display: none;
+    display: grid;
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 108px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(420px, 92vw);
+    max-width: 100%;
+    transform: translateX(105%);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
     background: rgba(15, 23, 42, 0.95);
     border: 1px solid rgba(148, 163, 184, 0.35);
-    border-radius: 14px;
-    padding: 16px;
-    z-index: 16;
+    border-radius: 0;
+    padding: 20px 18px 28px;
+    margin: 0;
+    z-index: 17;
     color: #e2e8f0;
-    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.6);
-    max-height: 60vh;
+    box-shadow: -12px 0 24px rgba(2, 6, 23, 0.6);
     overflow-y: auto;
+    gap: 12px;
   }
 
   .app--solver-open .mobile-solver-menu {
-    display: grid;
-    gap: 12px;
+    transform: translateX(0);
   }
 
   .mobile-solver-menu__header {
