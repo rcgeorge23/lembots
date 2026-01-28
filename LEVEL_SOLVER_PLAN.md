@@ -92,14 +92,14 @@ We do **not** render every attempt. We show:
   - `traceLite: TraceLite` (for preview playback; compressed)
 
 ### 3) TraceLite format (for incremental preview)
-- [ ] Implement a compact TraceLite format for previews without huge data:
+- [x] Implement a compact TraceLite format for previews without huge data:
   ```ts
   type TraceLite = {
     sampleEvery: number; // e.g. 5 or 10
     frames: Array<Array<{id:number,x:number,y:number,dir:number,status:string}>>;
   }
   ```
-- [ ] Sample positions every N ticks and store compact frames for “best-so-far” previews.
+- [x] Sample positions every N ticks and store compact frames for “best-so-far” previews.
 
 ### 4) Web Worker solver loop
 - [ ] Run solver search in a Web Worker to avoid UI jank.
