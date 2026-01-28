@@ -15,6 +15,9 @@ import type {
 
 const DEFAULT_SAMPLE_EVERY = 5;
 
+const normalizeSampleEvery = (sampleEvery: number): number =>
+  Number.isFinite(sampleEvery) && sampleEvery > 0 ? Math.floor(sampleEvery) : 1;
+
 const parseDirection = (direction: number | 'N' | 'E' | 'S' | 'W'): Direction => {
   if (typeof direction === 'number') {
     return ((direction % 4) + 4) % 4 as Direction;
@@ -165,7 +168,9 @@ export const evaluate = (
   const compiledProgram = toProgramNode(program);
   let simulation = createSimulationForLevel(level, options);
   const vmStates = new Map<string, ReturnType<typeof createVm>>();
-  const sampleEvery = options.sampleEvery ?? DEFAULT_SAMPLE_EVERY;
+  const sampleEvery = normalizeSampleEvery(
+    options.sampleEvery ?? DEFAULT_SAMPLE_EVERY,
+  );
   const traceLite: TraceLite = {
     sampleEvery,
     frames: [],
