@@ -116,11 +116,55 @@ const updateEvents = (
   };
 };
 
+interface ActionStats {
+  moveCount: number;
+  turnCount: number;
+  bumpCount: number;
+  waitCount: number;
+}
+
+const updateActionStats = (
+  stats: ActionStats,
+  beforeRobots: RobotState[],
+  afterRobots: RobotState[],
+  actions: Array<RobotAction | undefined>,
+): ActionStats => {
+  const afterById = new Map(afterRobots.map((robot) => [robot.id, robot]));
+  beforeRobots.forEach((robot, index) => {
+    const action = actions[index];
+    if (!action) {
+      return;
+    }
+    if (action === 'WAIT') {
+      stats.waitCount += 1;
+      return;
+    }
+    const nextRobot = afterById.get(robot.id);
+    if (action === 'MOVE_FORWARD') {
+      if (!nextRobot) {
+        stats.moveCount += 1;
+      } else if (nextRobot.x !== robot.x || nextRobot.y !== robot.y) {
+        stats.moveCount += 1;
+      } else {
+        stats.bumpCount += 1;
+      }
+      return;
+    }
+    if (action === 'TURN_LEFT' || action === 'TURN_RIGHT') {
+      if (!nextRobot || nextRobot.direction !== robot.direction) {
+        stats.turnCount += 1;
+      }
+    }
+  });
+  return stats;
+};
+
 const computeScore = (
   robots: RobotState[],
   exits: { x: number; y: number }[],
   savedCount: number,
   events: EventSummary,
+  actionStats: ActionStats,
   status: 'running' | 'won' | 'lost',
 ): number => {
   const aliveCount = robots.filter((robot) => robot.alive).length;
@@ -148,6 +192,11 @@ const computeScore = (
 
   score += aliveCount * 15;
   score -= deadCount * 25;
+
+  score += actionStats.moveCount * 4;
+  score += actionStats.turnCount * 2;
+  score -= actionStats.bumpCount * 6;
+  score -= actionStats.waitCount * 2;
 
   if (exits.length > 0) {
     let minDistance = Infinity;
@@ -189,6 +238,12 @@ export const evaluate = (
     raftUsed: false,
     waterTouched: false,
     anySaved: false,
+  };
+  let actionStats: ActionStats = {
+    moveCount: 0,
+    turnCount: 0,
+    bumpCount: 0,
+    waitCount: 0,
   };
   let bestScore = -Infinity;
   let bestRobots = snapshotRobots(simulation.robots);
@@ -244,7 +299,14 @@ export const evaluate = (
       actions.some((action) => action) ||
       (simulation.robots.length === 0 && hasRemainingSpawns)
     ) {
+      const beforeRobots = snapshotRobots(simulation.robots);
       simulation = stepSimulation(simulation, actions);
+      actionStats = updateActionStats(
+        actionStats,
+        beforeRobots,
+        simulation.robots,
+        actions,
+      );
     } else if (!hasRemainingSpawns) {
       simulation = { ...simulation, status: 'lost' };
     }
@@ -266,6 +328,7 @@ export const evaluate = (
       simulation.exits,
       simulation.savedCount,
       events,
+      actionStats,
       simulation.status,
     );
     if (score > bestScore) {
