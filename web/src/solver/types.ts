@@ -56,6 +56,42 @@ export interface EvalResult {
   traceLite?: TraceLite;
 }
 
+export interface SolverSearchOptions {
+  maxAttempts?: number;
+  maxTimeMs?: number;
+  maxDepth?: number;
+  progressEvery?: number;
+  seed?: number;
+  actions: RobotAction[];
+  conditions?: SolverConditionType[];
+}
+
+export interface SolverWorkerStartPayload {
+  level: SolverLevelDefinition;
+  evalOptions?: EvalOptions;
+  search: SolverSearchOptions;
+}
+
+export interface SolverWorkerProgressPayload {
+  attemptCount: number;
+  bestScore: number;
+  elapsedMs: number;
+  bestProgram?: SolverProgram;
+  bestTrace?: TraceLite;
+}
+
+export interface SolverWorkerResultPayload extends SolverWorkerProgressPayload {
+  solved: boolean;
+}
+
+export type SolverWorkerMessage =
+  | { type: 'start'; payload: SolverWorkerStartPayload }
+  | { type: 'cancel' };
+
+export type SolverWorkerResponse =
+  | { type: 'progress'; payload: SolverWorkerProgressPayload }
+  | { type: 'result'; payload: SolverWorkerResultPayload };
+
 export type SolverConditionType =
   | 'AHEAD_CLEAR'
   | 'LEFT_CLEAR'

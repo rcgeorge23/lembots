@@ -102,9 +102,9 @@ We do **not** render every attempt. We show:
 - [x] Sample positions every N ticks and store compact frames for “best-so-far” previews.
 
 ### 4) Web Worker solver loop
-- [ ] Run solver search in a Web Worker to avoid UI jank.
-- [ ] Emit progress updates (attempt count, best score, time elapsed, best candidate trace).
-- [ ] Support budgets (time, node count, or depth) and return best-so-far if budget expires.
+- [x] Run solver search in a Web Worker to avoid UI jank.
+- [x] Emit progress updates (attempt count, best score, time elapsed, best candidate trace).
+- [x] Support budgets (time, node count, or depth) and return best-so-far if budget expires.
 
 ### 5) Heuristics & scoring
 - [ ] Define a heuristic fitness score using progress + milestones.
