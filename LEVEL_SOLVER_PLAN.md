@@ -118,6 +118,6 @@ We do **not** render every attempt. We show:
 - [x] If not solved within budget, show best-so-far run + “Try again” / “Increase budget”.
 
 ### 7) Validation & testing
-- [ ] Add tests for `evaluate()` on small deterministic levels.
-- [ ] Add solver tests for known levels (should find solutions within budget).
-- [ ] Confirm solver does not block UI and respects time budget.
+- [x] Add tests for `evaluate()` on small deterministic levels.
+- [x] Add solver tests for known levels (should find solutions within budget).
+- [x] Confirm solver does not block UI and respects time budget.
