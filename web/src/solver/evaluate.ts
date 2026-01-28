@@ -123,23 +123,31 @@ const computeScore = (
   events: EventSummary,
   status: 'running' | 'won' | 'lost',
 ): number => {
-  let score = savedCount * 1000;
+  const aliveCount = robots.filter((robot) => robot.alive).length;
+  const deadCount = robots.length - aliveCount;
+  let score = savedCount * 1200;
   if (events.doorOpened) {
-    score += 50;
+    score += 80;
   }
   if (events.pressurePlatePressed) {
-    score += 25;
+    score += 40;
   }
   if (events.raftUsed) {
-    score += 50;
+    score += 90;
   }
   if (events.waterTouched) {
-    score += 10;
+    score += 20;
+  }
+  if (events.anySaved) {
+    score += 150;
   }
 
   if (status === 'won') {
-    score += 5000;
+    score += 6000;
   }
+
+  score += aliveCount * 15;
+  score -= deadCount * 25;
 
   if (exits.length > 0) {
     let minDistance = Infinity;
@@ -153,7 +161,7 @@ const computeScore = (
       });
     });
     if (minDistance !== Infinity) {
-      score += Math.max(0, 100 - minDistance);
+      score += Math.max(0, 150 - minDistance * 4);
     }
   }
 

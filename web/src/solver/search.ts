@@ -16,20 +16,6 @@ const clampPositive = (value: number | undefined, fallback: number): number => {
   return Math.floor(value);
 };
 
-const createRng = (seed: number | undefined) => {
-  let state = (seed ?? Date.now()) % 2147483647;
-  if (state <= 0) {
-    state += 2147483646;
-  }
-  return () => {
-    state = (state * 16807) % 2147483647;
-    return (state - 1) / 2147483646;
-  };
-};
-
-const randomIndex = (rng: () => number, max: number) =>
-  Math.floor(rng() * max);
-
 const cloneProgram = (program: SolverProgram): SolverProgram => ({
   type: 'sequence',
   steps: program.steps.map((step) => ({ ...step })),
@@ -53,31 +39,14 @@ const trimProgram = (program: SolverProgram): SolverProgram => {
   };
 };
 
-const mutateProgram = (
+const expandProgram = (
   program: SolverProgram,
   options: SolverSearchOptions,
-  rng: () => number,
-): SolverProgram => {
+): SolverProgram[] => {
   if (options.actions.length === 0) {
-    return cloneProgram(program);
+    return [cloneProgram(program)];
   }
-
-  const roll = rng();
-  if (program.steps.length === 0 || roll < 0.5) {
-    const action = options.actions[randomIndex(rng, options.actions.length)];
-    return appendAction(program, action);
-  }
-  if (roll < 0.8) {
-    const index = randomIndex(rng, program.steps.length);
-    const action = options.actions[randomIndex(rng, options.actions.length)];
-    return {
-      type: 'sequence',
-      steps: program.steps.map((step, idx) =>
-        idx === index ? { type: 'action', action } : { ...step },
-      ),
-    };
-  }
-  return trimProgram(program);
+  return options.actions.map((action) => appendAction(program, action));
 };
 
 export interface SearchState {
@@ -104,49 +73,90 @@ export const runSolverSearch = (
   const maxAttempts = clampPositive(options.maxAttempts, 200);
   const maxTimeMs = clampPositive(options.maxTimeMs, 1500);
   const maxDepth = clampPositive(options.maxDepth, 25);
+  const beamWidth = clampPositive(options.beamWidth, 20);
   const progressEvery = clampPositive(
     options.progressEvery,
     DEFAULT_PROGRESS_EVERY,
   );
-  const rng = createRng(options.seed);
 
   let bestProgram: SolverProgram | undefined;
   let bestEval: EvalResult | undefined;
   let attempts = 0;
-  let current: SolverProgram = { type: 'sequence', steps: [] };
   let solved = false;
   let lastProgressAttempt = 0;
+  let frontier: Array<{ program: SolverProgram; eval: EvalResult }> = [];
 
-  while (attempts < maxAttempts && Date.now() - start < maxTimeMs) {
-    attempts += 1;
+  const shouldContinue = () =>
+    attempts < maxAttempts && Date.now() - start < maxTimeMs;
 
-    current = mutateProgram(current, options, rng);
-    if (current.steps.length > maxDepth) {
-      current = trimProgram(current);
-      continue;
+  const pushProgress = () => {
+    if (attempts - lastProgressAttempt < progressEvery) {
+      return;
     }
+    lastProgressAttempt = attempts;
+    onProgress?.({
+      attemptCount: attempts,
+      bestScore: bestEval?.score ?? -Infinity,
+      elapsedMs: Date.now() - start,
+      bestProgram,
+      bestTrace: bestEval?.traceLite,
+    });
+  };
 
-    const evaluation = evaluate(current, level, evalOptions);
+  const evaluateCandidate = (program: SolverProgram): EvalResult | undefined => {
+    if (!shouldContinue()) {
+      return undefined;
+    }
+    attempts += 1;
+    const evaluation = evaluate(program, level, evalOptions);
     if (!bestEval || evaluation.score > bestEval.score) {
       bestEval = evaluation;
-      bestProgram = cloneProgram(current);
+      bestProgram = cloneProgram(program);
     }
-
     if (evaluation.solved) {
       solved = true;
-      break;
+    }
+    pushProgress();
+    return evaluation;
+  };
+
+  const initialProgram: SolverProgram = { type: 'sequence', steps: [] };
+  const initialEval = evaluateCandidate(initialProgram);
+  if (initialEval) {
+    frontier = [{ program: initialProgram, eval: initialEval }];
+  }
+
+  for (let depth = 0; depth < maxDepth && shouldContinue() && !solved; depth += 1) {
+    const nextLayer: Array<{ program: SolverProgram; eval: EvalResult }> = [];
+    const candidates = frontier
+      .sort((a, b) => b.eval.score - a.eval.score)
+      .slice(0, beamWidth);
+
+    for (const candidate of candidates) {
+      if (!shouldContinue() || solved) {
+        break;
+      }
+      const expansions = expandProgram(candidate.program, options);
+      for (const expansion of expansions) {
+        if (expansion.steps.length > maxDepth || !shouldContinue()) {
+          break;
+        }
+        const evaluation = evaluateCandidate(expansion);
+        if (!evaluation) {
+          break;
+        }
+        nextLayer.push({ program: expansion, eval: evaluation });
+        if (solved) {
+          break;
+        }
+      }
     }
 
-    if (attempts - lastProgressAttempt >= progressEvery) {
-      lastProgressAttempt = attempts;
-      onProgress?.({
-        attemptCount: attempts,
-        bestScore: bestEval?.score ?? -Infinity,
-        elapsedMs: Date.now() - start,
-        bestProgram,
-        bestTrace: bestEval?.traceLite,
-      });
+    if (nextLayer.length === 0) {
+      break;
     }
+    nextLayer.sort((a, b) => b.eval.score - a.eval.score);
+    frontier = nextLayer.slice(0, beamWidth);
   }
 
   const elapsedMs = Date.now() - start;
